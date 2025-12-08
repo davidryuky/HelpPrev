@@ -27,17 +27,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
 
       if (response.ok) {
         setStatus('success');
-        setFormData({ name: '', whatsapp: '', type: 'Aposentadoria' });
+        // Dados do formulário mantidos conforme solicitado (linha de reset removida)
         
-        // Notifica o componente pai se houver callback
+        // Notifica o componente pai se houver callback (ex: fechar modal)
         if (onSuccess) {
           setTimeout(() => {
             onSuccess();
-          }, 2000);
+          }, 4000); // Tempo aumentado para permitir leitura da mensagem
         }
 
-        // Reset visual local após 3 segundos
-        setTimeout(() => setStatus('idle'), 3000);
+        // Retorna ao formulário após 5 segundos para permitir leitura da mensagem
+        setTimeout(() => setStatus('idle'), 5000);
       } else {
         setStatus('error');
       }
@@ -61,12 +61,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
         </div>
 
         {status === 'success' ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in duration-300">
+          <div className="flex flex-col items-center justify-center py-6 text-center animate-in fade-in zoom-in duration-300">
             <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
               <CheckCircle size={32} />
             </div>
-            <h4 className="text-xl font-bold text-slate-900">Solicitação Recebida!</h4>
-            <p className="text-slate-600 mt-2">Nossa equipe já está analisando seus dados.</p>
+            <h4 className="text-xl font-bold text-slate-900 mb-3">Solicitação Recebida com Sucesso!</h4>
+            <div className="text-slate-600 space-y-2">
+              <p>Nossa equipe já está analisando seus dados.</p>
+              <p className="font-medium text-slate-800 bg-slate-50 p-4 rounded-lg border border-slate-100 leading-relaxed">
+                Fique tranquilo(a): entendemos a urgência e a importância do seu caso. Um advogado especialista vai revisar suas informações e entrará em contato pelo WhatsApp em instantes para te orientar sobre os próximos passos.
+              </p>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
