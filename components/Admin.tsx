@@ -353,7 +353,8 @@ export const Admin: React.FC = () => {
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Data</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Tipo / Score</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Tipo</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Score</th>
                   <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
@@ -383,9 +384,10 @@ export const Admin: React.FC = () => {
                         </a>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 hidden md:table-cell">
-                        <div className="flex flex-col gap-1">
-                          <span>{lead.type}</span>
-                          <div className="flex items-center gap-2" title={`Tech Score: ${score}/100`}>
+                        {lead.type}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 hidden lg:table-cell">
+                        <div className="flex items-center gap-2" title={`Tech Score: ${score}/100`}>
                             <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-gradient-to-r from-red-500 via-purple-500 to-blue-500" 
@@ -394,7 +396,6 @@ export const Admin: React.FC = () => {
                             </div>
                             <span className="text-[10px] text-slate-500 font-mono">{score}</span>
                           </div>
-                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
@@ -426,7 +427,7 @@ export const Admin: React.FC = () => {
                 })}
                 {filteredLeads.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                       {leads.length > 0 ? 'Nenhum contato encontrado com os filtros atuais.' : 'Nenhum contato recebido ainda.'}
                     </td>
                   </tr>
