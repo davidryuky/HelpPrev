@@ -1,6 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Pool } from 'pg';
+import pg from 'pg';
 import { Buffer } from 'buffer';
+
+const { Pool } = pg;
 
 // Configuração de conexão
 const pool = new Pool({

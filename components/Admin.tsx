@@ -43,18 +43,26 @@ export const Admin: React.FC = () => {
         body: JSON.stringify({ username, password })
       });
 
-      const data = await response.json();
+      // Tenta fazer o parse do JSON
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // Se falhar o parse (ex: erro 500 do Vercel retornando HTML), lança erro para cair no catch
+        throw new Error(`Erro no Servidor (${response.status}): Resposta inválida.`);
+      }
 
       if (response.ok) {
         localStorage.setItem('admin_token', data.token);
         setIsAuthenticated(true);
         fetchLeads();
       } else {
-        // Exibe erro retornado pela API (pode conter detalhes de conexão agora)
+        // Exibe erro retornado pela API
         setErrorMsg(data.details ? `Erro BD: ${data.details}` : (data.error || 'Erro desconhecido.'));
       }
-    } catch (err) {
-      setErrorMsg('Erro de conexão. Verifique sua internet.');
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Erro de conexão ou erro interno no servidor.');
     } finally {
       setLoginLoading(false);
     }
