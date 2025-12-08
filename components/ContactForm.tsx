@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 
 interface ContactFormProps {
@@ -14,6 +14,28 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errors, setErrors] = useState({ name: '', whatsapp: '' });
+  const [techData, setTechData] = useState<any>({});
+
+  // Coleta dados técnicos ao montar o componente
+  useEffect(() => {
+    try {
+      const data = {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        platform: navigator.platform,
+        screen: `${window.screen.width}x${window.screen.height}`,
+        colorDepth: window.screen.colorDepth,
+        deviceMemory: (navigator as any).deviceMemory || 'unknown',
+        hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        // Fingerprint simples baseado nas propriedades acima
+        fingerprint: btoa(`${navigator.userAgent}-${window.screen.width}-${new Date().getTimezoneOffset()}`).slice(0, 16)
+      };
+      setTechData(data);
+    } catch (e) {
+      console.log('Error collecting tech data', e);
+    }
+  }, []);
 
   // Formata telefone (XX) XXXXX-XXXX
   const formatPhoneNumber = (value: string) => {
@@ -66,10 +88,15 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
     setStatus('loading');
 
     try {
+      const payload = {
+        ...formData,
+        metadata: techData
+      };
+
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
