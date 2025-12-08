@@ -73,6 +73,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ message: 'Atualizado com sucesso' });
     }
 
+    // 5. Método DELETE (Privado - Apagar Lead)
+    else if (req.method === 'DELETE') {
+      const { id } = req.query;
+
+      if (!id) {
+        return res.status(400).json({ error: 'ID é obrigatório' });
+      }
+
+      await pool.execute('DELETE FROM leads WHERE id = ?', [id]);
+      return res.status(200).json({ message: 'Lead removido com sucesso' });
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error: any) {
     console.error('Erro no servidor:', error);

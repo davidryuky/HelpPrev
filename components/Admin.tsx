@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2 } from 'lucide-react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -21,6 +21,10 @@ export const Admin: React.FC = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [tempNotes, setTempNotes] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('todos');
 
   // Verificar sessão ao carregar
   useEffect(() => {
@@ -48,7 +52,6 @@ export const Admin: React.FC = () => {
       try {
         data = await response.json();
       } catch (parseError) {
-        // Se falhar o parse (ex: erro 500 do Vercel retornando HTML), lança erro para cair no catch
         throw new Error(`Erro no Servidor (${response.status}): Resposta inválida.`);
       }
 
@@ -57,7 +60,6 @@ export const Admin: React.FC = () => {
         setIsAuthenticated(true);
         fetchLeads();
       } else {
-        // Exibe erro retornado pela API
         setErrorMsg(data.details ? `Erro BD: ${data.details}` : (data.error || 'Erro desconhecido.'));
       }
     } catch (err: any) {
@@ -114,6 +116,33 @@ export const Admin: React.FC = () => {
     }
   };
 
+  const deleteLead = async (id: number) => {
+    if (!window.confirm('Tem certeza que deseja EXCLUIR este lead? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/leads?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+        }
+      });
+
+      if (res.ok) {
+        setLeads(leads.filter(l => l.id !== id));
+        if (selectedLead && selectedLead.id === id) {
+          setSelectedLead(null);
+        }
+      } else {
+        alert('Erro ao excluir lead');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao excluir');
+    }
+  };
+
   const openLeadModal = (lead: Lead) => {
     setSelectedLead(lead);
     setTempNotes(lead.notes || '');
@@ -122,7 +151,6 @@ export const Admin: React.FC = () => {
   const saveNotes = async () => {
     if (selectedLead) {
       await updateLead(selectedLead.id, { notes: tempNotes });
-      // Pequeno feedback visual
       const btn = document.getElementById('save-btn');
       if(btn) btn.innerText = 'Salvo!';
       setTimeout(() => {
@@ -130,6 +158,19 @@ export const Admin: React.FC = () => {
       }, 2000);
     }
   };
+
+  // Lógica de Filtragem no Cliente
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = 
+      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      lead.whatsapp.includes(searchTerm);
+    
+    const matchesStatus = 
+      statusFilter === 'todos' || 
+      lead.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   if (!isAuthenticated) {
     return (
@@ -206,6 +247,41 @@ export const Admin: React.FC = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        
+        {/* Toolbar de Filtros */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input 
+                type="text" 
+                placeholder="Buscar por nome ou telefone..." 
+                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none w-full md:w-64 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <select 
+                className="pl-10 pr-8 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none appearance-none bg-white w-full md:w-48 text-sm cursor-pointer"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="todos">Todos os Status</option>
+                <option value="pendente">Pendente</option>
+                <option value="lido">Lido</option>
+                <option value="em_atendimento">Em Atendimento</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="text-sm text-slate-500 font-medium">
+            Mostrando {filteredLeads.length} de {leads.length} leads
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -215,12 +291,12 @@ export const Admin: React.FC = () => {
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Data</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Tipo</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Ações</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-slate-50 transition-colors">
+                {filteredLeads.map((lead) => (
+                  <tr key={lead.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button 
                         onClick={() => updateLead(lead.id, { status: lead.status === 'pendente' ? 'lido' : 'pendente' })}
@@ -249,20 +325,29 @@ export const Admin: React.FC = () => {
                       {lead.type}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button 
-                        onClick={() => openLeadModal(lead)}
-                        className="text-slate-400 hover:text-amber-600 transition-colors bg-slate-100 hover:bg-amber-100 p-2 rounded-lg"
-                        title="Ver Detalhes"
-                      >
-                        <FileText size={18} />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => openLeadModal(lead)}
+                          className="text-slate-400 hover:text-amber-600 transition-colors bg-slate-100 hover:bg-amber-100 p-2 rounded-lg"
+                          title="Ver Detalhes"
+                        >
+                          <FileText size={18} />
+                        </button>
+                        <button 
+                          onClick={() => deleteLead(lead.id)}
+                          className="text-slate-400 hover:text-red-600 transition-colors bg-slate-100 hover:bg-red-100 p-2 rounded-lg"
+                          title="Excluir Lead"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
-                {leads.length === 0 && !loading && (
+                {filteredLeads.length === 0 && !loading && (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                      Nenhum contato recebido ainda.
+                      {leads.length > 0 ? 'Nenhum contato encontrado com os filtros atuais.' : 'Nenhum contato recebido ainda.'}
                     </td>
                   </tr>
                 )}
@@ -316,20 +401,31 @@ export const Admin: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-               <button 
-                onClick={() => setSelectedLead(null)}
-                className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors"
-              >
-                Fechar
-              </button>
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-between items-center">
               <button 
-                id="save-btn"
-                onClick={saveNotes}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
-              >
-                <Save size={16} /> Salvar Alterações
+                  onClick={() => {
+                    if(selectedLead) deleteLead(selectedLead.id);
+                  }}
+                  className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                >
+                  <Trash2 size={16} /> Excluir Lead
               </button>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setSelectedLead(null)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Fechar
+                </button>
+                <button 
+                  id="save-btn"
+                  onClick={saveNotes}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
+                >
+                  <Save size={16} /> Salvar Alterações
+                </button>
+              </div>
             </div>
           </div>
         </div>
