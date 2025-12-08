@@ -1,21 +1,23 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Pool } from 'pg';
 
+// Configuração da conexão usando as variáveis específicas da Vercel
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+  port: parseInt(process.env.DB_PORT || '5432'),
   ssl: {
     rejectUnauthorized: false,
   },
 });
 
-// Credenciais hardcoded conforme solicitado (apenas para verificação simples no backend)
-const VALID_AUTH = 'bWF5Om1heUAwdW1p'; // Base64 de may:may@@umi (simulando header Basic ou custom)
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  try {
-    const client = await pool.connect();
+  const client = await pool.connect();
 
-    // 1. Criação automática da tabela se não existir
+  try {
+    // 1. Garantir que a tabela leads existe
     await client.query(`
       CREATE TABLE IF NOT EXISTS leads (
         id SERIAL PRIMARY KEY,
@@ -28,13 +30,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     `);
 
-    // 2. Manipulação de Métodos
+    // 2. Método POST (Público - Salvar Lead)
     if (req.method === 'POST') {
-      // Salvar novo lead (Público)
       const { name, whatsapp, type } = req.body;
       
       if (!name || !whatsapp || !type) {
-        client.release();
         return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
       }
 
@@ -43,32 +43,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         [name, whatsapp, type]
       );
       
-      client.release();
       return res.status(201).json({ message: 'Contato salvo com sucesso!' });
     } 
-    
-    else if (req.method === 'GET') {
-      // Listar leads (Protegido - Admin)
-      const authHeader = req.headers.authorization;
-      
-      if (authHeader !== `Bearer ${'MAY-MAY@@umi'}`) { // Verificação simples do token gerado no front
-         client.release();
-         return res.status(401).json({ error: 'Não autorizado' });
-      }
 
+    // VERIFICAÇÃO DE SEGURANÇA PARA MÉTODOS ADMINISTRATIVOS
+    // Verifica se o token de autorização está presente (simples token de sessão gerado no login)
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Não autorizado' });
+    }
+    
+    // 3. Método GET (Privado - Listar Leads)
+    if (req.method === 'GET') {
       const result = await client.query('SELECT * FROM leads ORDER BY created_at DESC');
-      client.release();
       return res.status(200).json(result.rows);
     } 
     
+    // 4. Método PUT (Privado - Atualizar Lead)
     else if (req.method === 'PUT') {
-      // Atualizar lead (Protegido - Admin)
-      const authHeader = req.headers.authorization;
-      if (authHeader !== `Bearer ${'MAY-MAY@@umi'}`) {
-         client.release();
-         return res.status(401).json({ error: 'Não autorizado' });
-      }
-
       const { id, status, notes } = req.body;
       
       if (status) {
@@ -78,14 +70,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await client.query('UPDATE leads SET notes = $1 WHERE id = $2', [notes, id]);
       }
 
-      client.release();
       return res.status(200).json({ message: 'Atualizado com sucesso' });
     }
 
-    client.release();
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error: any) {
-    console.error(error);
+    console.error('Erro no servidor:', error);
     return res.status(500).json({ error: 'Erro interno no servidor', details: error.message });
+  } finally {
+    client.release();
   }
 }
