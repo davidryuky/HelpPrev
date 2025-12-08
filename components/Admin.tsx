@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter } from 'lucide-react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -159,6 +159,33 @@ export const Admin: React.FC = () => {
     }
   };
 
+  // Função para alternar status: Pendente -> Lido -> Em Atendimento -> Pendente
+  const cycleStatus = (currentStatus: string) => {
+    if (currentStatus === 'pendente') return 'lido';
+    if (currentStatus === 'lido') return 'em_atendimento';
+    return 'pendente';
+  };
+
+  // Helper para cores do status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pendente': return 'bg-amber-100 text-amber-800 hover:bg-amber-200';
+      case 'lido': return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'em_atendimento': return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      default: return 'bg-slate-100 text-slate-800';
+    }
+  };
+
+  // Helper para ícone do status
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pendente': return <Clock size={12} className="mr-1"/>;
+      case 'lido': return <CheckCircle size={12} className="mr-1"/>;
+      case 'em_atendimento': return <Briefcase size={12} className="mr-1"/>;
+      default: return null;
+    }
+  };
+
   // Lógica de Filtragem no Cliente
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = 
@@ -299,14 +326,10 @@ export const Admin: React.FC = () => {
                   <tr key={lead.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button 
-                        onClick={() => updateLead(lead.id, { status: lead.status === 'pendente' ? 'lido' : 'pendente' })}
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                        lead.status === 'pendente' 
-                          ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' 
-                          : 'bg-green-100 text-green-800 hover:bg-green-200'
-                      }`}>
-                        {lead.status === 'pendente' ? <Clock size={12} className="mr-1"/> : <CheckCircle size={12} className="mr-1"/>}
-                        {lead.status.toUpperCase()}
+                        onClick={() => updateLead(lead.id, { status: cycleStatus(lead.status) as any })}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${getStatusColor(lead.status)}`}>
+                        {getStatusIcon(lead.status)}
+                        {lead.status.replace('_', ' ').toUpperCase()}
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
@@ -384,9 +407,11 @@ export const Admin: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 uppercase font-bold">Status Atual</p>
-                  <p className={`${selectedLead.status === 'pendente' ? 'text-amber-600' : 'text-green-600'} font-semibold`}>
-                    {selectedLead.status.toUpperCase()}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedLead.status)}`}>
+                        {selectedLead.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                  </div>
                 </div>
               </div>
 

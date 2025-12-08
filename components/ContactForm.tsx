@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, CheckCircle, Loader2 } from 'lucide-react';
+import { Send, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 
 interface ContactFormProps {
   onSuccess?: () => void;
@@ -13,9 +13,56 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
     type: 'Aposentadoria'
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errors, setErrors] = useState({ name: '', whatsapp: '' });
+
+  // Formata telefone (XX) XXXXX-XXXX
+  const formatPhoneNumber = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers.replace(/^(\d{0,2})/, '($1');
+    if (numbers.length <= 7) return numbers.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+    return numbers.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3');
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setFormData({ ...formData, whatsapp: formatted });
+    if (errors.whatsapp) setErrors({ ...errors, whatsapp: '' });
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, name: e.target.value });
+    if (errors.name) setErrors({ ...errors, name: '' });
+  };
+
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = { name: '', whatsapp: '' };
+
+    // Validação Nome (Mínimo 2 palavras)
+    const nameParts = formData.name.trim().split(/\s+/);
+    if (nameParts.length < 2 || nameParts[1].length < 1) {
+      newErrors.name = 'Por favor, digite seu nome e sobrenome.';
+      isValid = false;
+    }
+
+    // Validação Telefone (Mínimo 10 dígitos - DDD + 8 ou 9)
+    const phoneDigits = formData.whatsapp.replace(/\D/g, '');
+    if (phoneDigits.length < 10) {
+      newErrors.whatsapp = 'Digite um número de telefone válido com DDD.';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setStatus('loading');
 
     try {
@@ -69,25 +116,30 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
               <input 
-                required
                 type="text" 
                 placeholder="Ex: João da Silva"
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
+                className={`w-full px-4 py-3 rounded-lg border ${errors.name ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-amber-500'} focus:ring-2 transition-all outline-none`}
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={handleNameChange}
               />
+              {errors.name && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/> {errors.name}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">WhatsApp (com DDD)</label>
               <input 
-                required
                 type="tel" 
                 placeholder="(11) 99999-9999"
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
+                className={`w-full px-4 py-3 rounded-lg border ${errors.whatsapp ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-amber-500'} focus:ring-2 transition-all outline-none`}
                 value={formData.whatsapp}
-                onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+                onChange={handlePhoneChange}
+                maxLength={15}
               />
+              {errors.whatsapp && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/> {errors.whatsapp}</p>
+              )}
             </div>
 
             <div>
