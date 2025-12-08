@@ -57,10 +57,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div>
             <h4 className="text-white font-bold mb-4">Contato</h4>
             <ul className="space-y-2 text-sm">
-              <li>WhatsApp: (11) 99999-9999</li>
               <li>Email: contato@helpprev.com.br</li>
               <li>Atendimento: Seg a Sex, 8h às 18h</li>
-              <li className="mt-4 text-xs text-slate-500">OAB/SP 00.000</li>
             </ul>
           </div>
         </div>
