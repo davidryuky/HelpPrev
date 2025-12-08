@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { Stats } from './components/Stats';
@@ -9,8 +9,22 @@ import { CTASection } from './components/CTASection';
 import { FAQ } from './components/FAQ';
 import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
+import { Admin } from './components/Admin';
 
 const App: React.FC = () => {
+  const [isAdminRoute, setIsAdminRoute] = useState(false);
+
+  useEffect(() => {
+    // Verificação simples de rota
+    if (window.location.pathname === '/admin') {
+      setIsAdminRoute(true);
+    }
+  }, []);
+
+  if (isAdminRoute) {
+    return <Admin />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col w-full overflow-x-hidden">
       <Header />
