@@ -11,13 +11,16 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false,
   },
+  connectionTimeoutMillis: 5000,
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const client = await pool.connect();
-
+  let client;
+  
   try {
-    // 1. Garantir que a tabela leads existe
+    client = await pool.connect();
+
+    // 1. Garantir que a tabela leads existe (Redundância de segurança)
     await client.query(`
       CREATE TABLE IF NOT EXISTS leads (
         id SERIAL PRIMARY KEY,
@@ -47,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } 
 
     // VERIFICAÇÃO DE SEGURANÇA PARA MÉTODOS ADMINISTRATIVOS
-    // Verifica se o token de autorização está presente (simples token de sessão gerado no login)
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Não autorizado' });
@@ -76,8 +78,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error: any) {
     console.error('Erro no servidor:', error);
-    return res.status(500).json({ error: 'Erro interno no servidor', details: error.message });
+    return res.status(500).json({ 
+      error: 'Erro interno no servidor', 
+      details: error.message 
+    });
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 }

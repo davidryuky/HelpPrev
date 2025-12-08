@@ -43,16 +43,18 @@ export const Admin: React.FC = () => {
         body: JSON.stringify({ username, password })
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
         localStorage.setItem('admin_token', data.token);
         setIsAuthenticated(true);
         fetchLeads();
       } else {
-        setErrorMsg('Usuário ou senha incorretos.');
+        // Exibe erro retornado pela API (pode conter detalhes de conexão agora)
+        setErrorMsg(data.details ? `Erro BD: ${data.details}` : (data.error || 'Erro desconhecido.'));
       }
     } catch (err) {
-      setErrorMsg('Erro ao conectar com o servidor.');
+      setErrorMsg('Erro de conexão. Verifique sua internet.');
     } finally {
       setLoginLoading(false);
     }
@@ -134,7 +136,7 @@ export const Admin: React.FC = () => {
           <p className="text-center text-slate-500 mb-6 text-sm">Área restrita para equipe jurídica</p>
           
           {errorMsg && (
-             <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center border border-red-100">
+             <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center border border-red-100 break-words">
                {errorMsg}
              </div>
           )}
