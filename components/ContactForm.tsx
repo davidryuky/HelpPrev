@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { Send, CheckCircle, Loader2 } from 'lucide-react';
 
-export const ContactForm: React.FC = () => {
+interface ContactFormProps {
+  onSuccess?: () => void;
+  isModal?: boolean;
+}
+
+export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = false }) => {
   const [formData, setFormData] = useState({
     name: '',
     whatsapp: '',
@@ -23,7 +28,15 @@ export const ContactForm: React.FC = () => {
       if (response.ok) {
         setStatus('success');
         setFormData({ name: '', whatsapp: '', type: 'Aposentadoria' });
-        // Reset após 3 segundos
+        
+        // Notifica o componente pai se houver callback
+        if (onSuccess) {
+          setTimeout(() => {
+            onSuccess();
+          }, 2000);
+        }
+
+        // Reset visual local após 3 segundos
         setTimeout(() => setStatus('idle'), 3000);
       } else {
         setStatus('error');
@@ -35,11 +48,13 @@ export const ContactForm: React.FC = () => {
   };
 
   return (
-    <div id="contato" className="w-full max-w-lg mx-auto relative group">
-      {/* Efeito de brilho no fundo */}
-      <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+    <div id="contato" className={`w-full max-w-lg mx-auto relative group ${isModal ? '' : ''}`}>
+      {/* Efeito de brilho no fundo (apenas se não for modal para não poluir o popup) */}
+      {!isModal && (
+        <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+      )}
       
-      <div className="relative bg-white rounded-xl shadow-2xl p-8 border border-slate-100">
+      <div className={`relative bg-white rounded-xl ${isModal ? '' : 'shadow-2xl border border-slate-100'} p-8`}>
         <div className="text-center mb-8">
           <h3 className="text-2xl font-bold text-slate-900 mb-2">Análise Gratuita do Caso</h3>
           <p className="text-slate-500">Preencha abaixo e um especialista entrará em contato em até 10 minutos.</p>

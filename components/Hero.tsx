@@ -1,7 +1,11 @@
 import React from 'react';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 
-export const Hero: React.FC = () => {
+interface HeroProps {
+  onOpenModal: () => void;
+}
+
+export const Hero: React.FC<HeroProps> = ({ onOpenModal }) => {
   return (
     <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-slate-900">
       {/* Background Image with Overlay */}
@@ -35,14 +39,14 @@ export const Hero: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button 
-               onClick={() => window.open('https://wa.me/5511999999999?text=Ol%C3%A1%2C%20quero%20analisar%20meu%20caso%20agora.', '_blank')}
+               onClick={onOpenModal}
               className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-900 text-lg font-bold py-4 px-8 rounded-lg shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
             >
               Analisar Meu Caso Agora
               <ArrowRight size={20} />
             </button>
             <span className="text-slate-400 text-sm mt-2 sm:mt-0">
-              *Atendimento imediato via WhatsApp
+              *Análise gratuita e sigilosa
             </span>
           </div>
         </div>

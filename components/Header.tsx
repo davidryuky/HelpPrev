@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Scale, Menu, X } from 'lucide-react';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onOpenModal: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onOpenModal }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -19,6 +23,11 @@ export const Header: React.FC = () => {
       element.scrollIntoView({ behavior: 'smooth' });
       setIsMobileMenuOpen(false);
     }
+  };
+
+  const handleOpenModal = () => {
+    onOpenModal();
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -44,7 +53,7 @@ export const Header: React.FC = () => {
           <button onClick={() => scrollTo('diferenciais')} className="text-slate-200 hover:text-white font-medium transition-colors">Diferenciais</button>
           <button onClick={() => scrollTo('depoimentos')} className="text-slate-200 hover:text-white font-medium transition-colors">Casos de Sucesso</button>
           <button 
-            onClick={() => window.open('https://wa.me/5511999999999?text=Ol%C3%A1%2C%20meu%20benef%C3%ADcio%20foi%20negado%20e%20preciso%20de%20ajuda.', '_blank')}
+            onClick={handleOpenModal}
             className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-2 px-6 rounded-full transition-all transform hover:scale-105 shadow-md"
           >
             Falar com Especialista
@@ -67,10 +76,10 @@ export const Header: React.FC = () => {
           <button onClick={() => scrollTo('diferenciais')} className="text-left text-slate-200 py-2 border-b border-slate-800">Diferenciais</button>
           <button onClick={() => scrollTo('depoimentos')} className="text-left text-slate-200 py-2 border-b border-slate-800">Depoimentos</button>
           <button 
-             onClick={() => window.open('https://wa.me/5511999999999?text=Ol%C3%A1%2C%20meu%20benef%C3%ADcio%20foi%20negado%20e%20preciso%20de%20ajuda.', '_blank')}
+             onClick={handleOpenModal}
             className="bg-amber-500 text-slate-900 font-bold py-3 px-6 rounded-lg text-center mt-2"
           >
-            Falar no WhatsApp Agora
+            Falar com Especialista
           </button>
         </div>
       )}
