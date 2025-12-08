@@ -1,13 +1,15 @@
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
 
-export const FloatingWhatsApp: React.FC = () => {
+interface FloatingWhatsAppProps {
+  onClick: () => void;
+}
+
+export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ onClick }) => {
   return (
-    <a 
-      href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20gostaria%20de%20falar%20com%20um%20advogado%20sobre%20meu%20benef%C3%ADcio."
-      target="_blank"
-      rel="noreferrer"
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-3 group"
+    <button 
+      onClick={onClick}
+      className="fixed bottom-6 right-6 z-50 flex items-center gap-3 group border-none outline-none cursor-pointer"
     >
       <div className="bg-white text-slate-900 text-sm font-bold py-2 px-4 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity absolute right-full mr-4 whitespace-nowrap hidden md:block">
         Fale conosco agora!
@@ -19,6 +21,6 @@ export const FloatingWhatsApp: React.FC = () => {
         </span>
         <MessageCircle size={32} color="white" fill="white" />
       </div>
-    </a>
+    </button>
   );
 };

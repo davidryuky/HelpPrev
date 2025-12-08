@@ -57,7 +57,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
       <div className={`relative bg-white rounded-xl ${isModal ? '' : 'shadow-2xl border border-slate-100'} p-8`}>
         <div className="text-center mb-8">
           <h3 className="text-2xl font-bold text-slate-900 mb-2">Análise Gratuita do Caso</h3>
-          <p className="text-slate-500">Preencha abaixo e um especialista entrará em contato em até 10 minutos.</p>
+          <p className="text-slate-500">Preencha abaixo e um especialista entrará em contato rapidamente.</p>
         </div>
 
         {status === 'success' ? (

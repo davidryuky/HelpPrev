@@ -1,7 +1,11 @@
 import React from 'react';
 import { FileWarning, Briefcase, Baby, UserPlus, HeartPulse, ShieldAlert } from 'lucide-react';
 
-export const Services: React.FC = () => {
+interface ServicesProps {
+  onOpenModal: () => void;
+}
+
+export const Services: React.FC<ServicesProps> = ({ onOpenModal }) => {
   const services = [
     {
       icon: <FileWarning />,
@@ -52,7 +56,7 @@ export const Services: React.FC = () => {
               <h3 className="text-xl font-bold mb-3">{item.title}</h3>
               <p className="text-slate-400">{item.desc}</p>
               <button 
-                 onClick={() => window.open(`https://wa.me/5511999999999?text=Quero%20saber%20mais%20sobre%20${encodeURIComponent(item.title)}`, '_blank')}
+                 onClick={onOpenModal}
                 className="mt-6 text-amber-500 font-semibold text-sm hover:text-amber-400 flex items-center gap-1 group"
               >
                 Resolver esse problema 

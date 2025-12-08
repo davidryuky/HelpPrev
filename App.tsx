@@ -38,13 +38,13 @@ const App: React.FC = () => {
         <Hero onOpenModal={openModal} />
         <Stats />
         <WhyUs />
-        <Services />
+        <Services onOpenModal={openModal} />
         <CTASection />
         <Testimonials />
         <FAQ />
       </main>
       <Footer />
-      <FloatingWhatsApp />
+      <FloatingWhatsApp onClick={openModal} />
 
       {/* Modal / Popup */}
       {isModalOpen && (
