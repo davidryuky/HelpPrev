@@ -1,37 +1,33 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import pg from 'pg';
+import mysql from 'mysql2/promise';
 
-const { Pool } = pg;
-
-// Configuração da conexão usando as variáveis específicas da Vercel
-const pool = new Pool({
+// Configuração da conexão MySQL
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  port: parseInt(process.env.DB_PORT || '5432'),
+  port: parseInt(process.env.DB_PORT || '3306'),
   ssl: {
     rejectUnauthorized: false,
   },
-  connectionTimeoutMillis: 5000,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  let client;
-  
   try {
-    client = await pool.connect();
-
-    // 1. Garantir que a tabela leads existe (Redundância de segurança)
-    await client.query(`
+    // 1. Garantir que a tabela leads existe (MySQL Syntax)
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS leads (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        whatsapp TEXT NOT NULL,
-        type TEXT NOT NULL,
-        status TEXT DEFAULT 'pendente',
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        whatsapp VARCHAR(255) NOT NULL,
+        type VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'pendente',
         notes TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -43,15 +39,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
       }
 
-      await client.query(
-        'INSERT INTO leads (name, whatsapp, type) VALUES ($1, $2, $3)',
+      await pool.execute(
+        'INSERT INTO leads (name, whatsapp, type) VALUES (?, ?, ?)',
         [name, whatsapp, type]
       );
       
       return res.status(201).json({ message: 'Contato salvo com sucesso!' });
     } 
 
-    // VERIFICAÇÃO DE SEGURANÇA PARA MÉTODOS ADMINISTRATIVOS
+    // VERIFICAÇÃO DE SEGURANÇA
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Não autorizado' });
@@ -59,8 +55,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // 3. Método GET (Privado - Listar Leads)
     if (req.method === 'GET') {
-      const result = await client.query('SELECT * FROM leads ORDER BY created_at DESC');
-      return res.status(200).json(result.rows);
+      const [rows] = await pool.query('SELECT * FROM leads ORDER BY created_at DESC');
+      return res.status(200).json(rows);
     } 
     
     // 4. Método PUT (Privado - Atualizar Lead)
@@ -68,10 +64,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { id, status, notes } = req.body;
       
       if (status) {
-        await client.query('UPDATE leads SET status = $1 WHERE id = $2', [status, id]);
+        await pool.execute('UPDATE leads SET status = ? WHERE id = ?', [status, id]);
       }
       if (notes !== undefined) {
-        await client.query('UPDATE leads SET notes = $1 WHERE id = $2', [notes, id]);
+        await pool.execute('UPDATE leads SET notes = ? WHERE id = ?', [notes, id]);
       }
 
       return res.status(200).json({ message: 'Atualizado com sucesso' });
@@ -84,9 +80,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: 'Erro interno no servidor', 
       details: error.message 
     });
-  } finally {
-    if (client) {
-      client.release();
-    }
   }
 }
