@@ -27,17 +27,8 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
 
       if (response.ok) {
         setStatus('success');
-        // Dados do formulário mantidos conforme solicitado (linha de reset removida)
-        
-        // Notifica o componente pai se houver callback (ex: fechar modal)
-        if (onSuccess) {
-          setTimeout(() => {
-            onSuccess();
-          }, 4000); // Tempo aumentado para permitir leitura da mensagem
-        }
-
-        // Retorna ao formulário após 5 segundos para permitir leitura da mensagem
-        setTimeout(() => setStatus('idle'), 5000);
+        // Não resetamos mais o status nem chamamos onSuccess automaticamente.
+        // A mensagem de sucesso ficará fixa na tela.
       } else {
         setStatus('error');
       }
@@ -69,7 +60,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
             <div className="text-slate-600 space-y-2">
               <p>Nossa equipe já está analisando seus dados.</p>
               <p className="font-medium text-slate-800 bg-slate-50 p-4 rounded-lg border border-slate-100 leading-relaxed">
-                Fique tranquilo(a): entendemos a urgência e a importância do seu caso. Um advogado especialista vai revisar suas informações e entrará em contato pelo WhatsApp em instantes para te orientar sobre os próximos passos.
+                Fique tranquilo(a): entendemos a urgência e a importância do seu caso. Um advogado especialista vai revisar suas informações e entrará em contato pelo WhatsApp o mais breve possível para te orientar sobre os próximos passos.
               </p>
             </div>
           </div>
