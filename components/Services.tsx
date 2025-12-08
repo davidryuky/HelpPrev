@@ -47,7 +47,7 @@ export const Services: React.FC = () => {
           {services.map((item, idx) => (
             <div key={idx} className="bg-slate-800/50 border border-slate-700 p-8 rounded-2xl hover:bg-slate-800 transition-all hover:-translate-y-1">
               <div className="text-amber-500 mb-4 w-12 h-12 flex items-center justify-center bg-slate-700 rounded-lg">
-                {React.cloneElement(item.icon as React.ReactElement, { size: 24 })}
+                {React.cloneElement(item.icon as React.ReactElement<any>, { size: 24 })}
               </div>
               <h3 className="text-xl font-bold mb-3">{item.title}</h3>
               <p className="text-slate-400">{item.desc}</p>
