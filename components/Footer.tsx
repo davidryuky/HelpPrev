@@ -1,13 +1,22 @@
 import React from 'react';
 import { Scale, Instagram, Facebook, Linkedin } from 'lucide-react';
+import { PageView } from '../App';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate?: (view: PageView) => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const handleNav = (view: PageView) => {
+    if (onNavigate) onNavigate(view);
+  };
+
   return (
     <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">
-            <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center gap-2 mb-6 cursor-pointer" onClick={() => handleNav('home')}>
               <div className="bg-amber-500 p-1.5 rounded-lg">
                 <Scale className="text-slate-900 w-5 h-5" />
               </div>
@@ -28,20 +37,20 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="text-white font-bold mb-4">Serviços</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-amber-500">Aposentadorias</a></li>
-              <li><a href="#" className="hover:text-amber-500">Auxílio Doença</a></li>
-              <li><a href="#" className="hover:text-amber-500">BPC / LOAS</a></li>
-              <li><a href="#" className="hover:text-amber-500">Revisão da Vida Toda</a></li>
+              <li><button onClick={() => handleNav('home')} className="hover:text-amber-500 text-left">Aposentadorias</button></li>
+              <li><button onClick={() => handleNav('home')} className="hover:text-amber-500 text-left">Auxílio Doença</button></li>
+              <li><button onClick={() => handleNav('home')} className="hover:text-amber-500 text-left">BPC / LOAS</button></li>
+              <li><button onClick={() => handleNav('home')} className="hover:text-amber-500 text-left">Revisão da Vida Toda</button></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-white font-bold mb-4">Institucional</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-amber-500">Sobre Nós</a></li>
-              <li><a href="#" className="hover:text-amber-500">Nossa Equipe</a></li>
-              <li><a href="#" className="hover:text-amber-500">Blog Jurídico</a></li>
-              <li><a href="#" className="hover:text-amber-500">Política de Privacidade</a></li>
+              <li><button onClick={() => handleNav('about')} className="hover:text-amber-500 text-left">Sobre Nós</button></li>
+              <li><button onClick={() => handleNav('team')} className="hover:text-amber-500 text-left">Nossa Equipe</button></li>
+              <li><button onClick={() => handleNav('blog')} className="hover:text-amber-500 text-left">Blog Jurídico</button></li>
+              <li><button onClick={() => handleNav('privacy')} className="hover:text-amber-500 text-left">Política de Privacidade</button></li>
             </ul>
           </div>
 

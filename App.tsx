@@ -12,13 +12,20 @@ import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { Admin } from './components/Admin';
 import { ContactForm } from './components/ContactForm';
+import { About } from './components/About';
+import { Team } from './components/Team';
+import { Blog } from './components/Blog';
+import { Privacy } from './components/Privacy';
+
+export type PageView = 'home' | 'about' | 'team' | 'blog' | 'privacy';
 
 const App: React.FC = () => {
   const [isAdminRoute, setIsAdminRoute] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<PageView>('home');
 
   useEffect(() => {
-    // Verificação simples de rota
+    // Verificação simples de rota para admin
     if (window.location.pathname === '/admin') {
       setIsAdminRoute(true);
     }
@@ -27,23 +34,39 @@ const App: React.FC = () => {
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
+  const handleNavigate = (view: PageView) => {
+    setCurrentView(view);
+    window.scrollTo(0, 0);
+  };
+
   if (isAdminRoute) {
     return <Admin />;
   }
 
   return (
     <div className="min-h-screen flex flex-col w-full overflow-x-hidden relative">
-      <Header onOpenModal={openModal} />
-      <main>
-        <Hero onOpenModal={openModal} />
-        <Stats />
-        <WhyUs />
-        <Services onOpenModal={openModal} />
-        <CTASection />
-        <Testimonials />
-        <FAQ />
+      <Header onOpenModal={openModal} onNavigate={handleNavigate} currentView={currentView} />
+      
+      <main className="flex-grow">
+        {currentView === 'home' && (
+          <>
+            <Hero onOpenModal={openModal} />
+            <Stats />
+            <WhyUs />
+            <Services onOpenModal={openModal} />
+            <CTASection />
+            <Testimonials />
+            <FAQ />
+          </>
+        )}
+
+        {currentView === 'about' && <About onOpenModal={openModal} />}
+        {currentView === 'team' && <Team onOpenModal={openModal} />}
+        {currentView === 'blog' && <Blog onOpenModal={openModal} />}
+        {currentView === 'privacy' && <Privacy />}
       </main>
-      <Footer />
+
+      <Footer onNavigate={handleNavigate} />
       <FloatingWhatsApp onClick={openModal} />
 
       {/* Modal / Popup */}
