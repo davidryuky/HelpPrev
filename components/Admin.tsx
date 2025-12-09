@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Monitor, Globe, Fingerprint, Mail, Send } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Monitor, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -26,6 +26,10 @@ export const Admin: React.FC = () => {
   const [tempNotes, setTempNotes] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   
+  // Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+  
   // Estados para envio de email
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
@@ -43,6 +47,11 @@ export const Admin: React.FC = () => {
       fetchLeads();
     }
   }, []);
+
+  // Resetar paginação ao filtrar
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -293,6 +302,8 @@ Equipe MeuPrev`;
     }
   };
 
+  // --- LÓGICA DE DADOS E PAGINAÇÃO ---
+
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = 
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -305,6 +316,65 @@ Equipe MeuPrev`;
     return matchesSearch && matchesStatus;
   });
 
+  const totalPages = Math.ceil(filteredLeads.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLeads = filteredLeads.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // --- LÓGICA DO DASHBOARD ---
+  
+  const stats = useMemo(() => {
+    const total = leads.length;
+    
+    // Datas
+    const now = new Date();
+    const today = now.toLocaleDateString('pt-BR');
+    const todayCount = leads.filter(l => new Date(l.created_at).toLocaleDateString('pt-BR') === today).length;
+    
+    // Status
+    const inService = leads.filter(l => l.status === 'em_atendimento' || l.status === 'lido').length;
+    const conversionRate = total > 0 ? Math.round((inService / total) * 100) : 0;
+
+    // Mobile Check (Simples baseado em userAgent no metadata)
+    let mobileCount = 0;
+    leads.forEach(l => {
+      if(l.metadata && (l.metadata.includes('Android') || l.metadata.includes('iPhone'))) mobileCount++;
+    });
+    const mobileRate = total > 0 ? Math.round((mobileCount / total) * 100) : 0;
+
+    // Tipos
+    const byType: {[key: string]: number} = {};
+    leads.forEach(l => {
+      byType[l.type] = (byType[l.type] || 0) + 1;
+    });
+    const topTypes = Object.entries(byType)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5); // Top 5
+
+    // Estados
+    const byState: {[key: string]: number} = {};
+    leads.forEach(l => {
+      if(l.state) byState[l.state] = (byState[l.state] || 0) + 1;
+    });
+    const topStates = Object.entries(byState)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5); // Top 5
+
+    // Últimos 7 dias
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const fullDateStr = d.toLocaleDateString('pt-BR'); // para comparar
+      
+      const count = leads.filter(l => new Date(l.created_at).toLocaleDateString('pt-BR') === fullDateStr).length;
+      last7Days.push({ date: dateStr, count });
+    }
+
+    return { total, todayCount, conversionRate, mobileRate, topTypes, topStates, last7Days };
+  }, [leads]);
+
+  // --- VIEW: LOGIN ---
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -357,8 +427,9 @@ Equipe MeuPrev`;
     );
   }
 
+  // --- VIEW: DASHBOARD ---
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-100 pb-20">
       {/* Admin Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -411,11 +482,12 @@ Equipe MeuPrev`;
           </div>
           
           <div className="text-sm text-slate-500 font-medium">
-            Mostrando {filteredLeads.length} de {leads.length} leads
+            Total de {filteredLeads.length} leads encontrados
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden">
+        {/* Tabela de Leads */}
+        <div className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden mb-12">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -430,7 +502,7 @@ Equipe MeuPrev`;
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {filteredLeads.map((lead) => {
+                {paginatedLeads.map((lead) => {
                   const score = calculateScore(lead.metadata);
                   return (
                     <tr key={lead.id} className="hover:bg-slate-50 transition-colors group">
@@ -506,7 +578,7 @@ Equipe MeuPrev`;
                     </tr>
                   );
                 })}
-                {filteredLeads.length === 0 && !loading && (
+                {paginatedLeads.length === 0 && !loading && (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                       {leads.length > 0 ? 'Nenhum contato encontrado com os filtros atuais.' : 'Nenhum contato recebido ainda.'}
@@ -516,6 +588,163 @@ Equipe MeuPrev`;
               </tbody>
             </table>
           </div>
+          
+          {/* Paginação Controles */}
+          {totalPages > 1 && (
+            <div className="bg-white border-t border-slate-200 px-6 py-4 flex items-center justify-between">
+              <span className="text-sm text-slate-500">
+                Página <span className="font-bold text-slate-900">{currentPage}</span> de <span className="font-bold">{totalPages}</span>
+              </span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* --- DASHBOARD ANALYTICS --- */}
+        <div className="mb-8">
+           <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <BarChart3 className="text-amber-500" /> Dashboard de Performance
+           </h2>
+           
+           {/* Top Stats Cards */}
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                 <div>
+                    <p className="text-sm text-slate-500 font-medium">Total de Leads</p>
+                    <h3 className="text-3xl font-bold text-slate-900 mt-1">{stats.total}</h3>
+                 </div>
+                 <div className="bg-blue-100 p-3 rounded-full text-blue-600">
+                    <TrendingUp size={24} />
+                 </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                 <div>
+                    <p className="text-sm text-slate-500 font-medium">Leads Hoje</p>
+                    <h3 className="text-3xl font-bold text-slate-900 mt-1">{stats.todayCount}</h3>
+                 </div>
+                 <div className="bg-amber-100 p-3 rounded-full text-amber-600">
+                    <CalendarRange size={24} />
+                 </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                 <div>
+                    <p className="text-sm text-slate-500 font-medium">Taxa de Atendimento</p>
+                    <h3 className="text-3xl font-bold text-slate-900 mt-1">{stats.conversionRate}%</h3>
+                 </div>
+                 <div className="bg-green-100 p-3 rounded-full text-green-600">
+                    <CheckCircle size={24} />
+                 </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                 <div>
+                    <p className="text-sm text-slate-500 font-medium">Acesso Mobile</p>
+                    <h3 className="text-3xl font-bold text-slate-900 mt-1">{stats.mobileRate}%</h3>
+                 </div>
+                 <div className="bg-purple-100 p-3 rounded-full text-purple-600">
+                    <Smartphone size={24} />
+                 </div>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Gráfico de Barras - Últimos 7 dias */}
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
+                 <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <TrendingUp size={18} className="text-slate-400" /> Leads nos Últimos 7 Dias
+                 </h3>
+                 <div className="h-64 flex items-end justify-between gap-4 px-2">
+                    {stats.last7Days.map((day, idx) => {
+                       // Encontrar o maior valor para calcular altura relativa
+                       const max = Math.max(...stats.last7Days.map(d => d.count), 1); 
+                       const heightPct = (day.count / max) * 100;
+                       return (
+                          <div key={idx} className="flex flex-col items-center flex-1 group">
+                             <div className="relative w-full bg-slate-100 rounded-t-lg overflow-hidden flex items-end h-48 transition-all hover:bg-slate-200">
+                                <div 
+                                  className="w-full bg-gradient-to-t from-amber-500 to-amber-300 rounded-t-lg transition-all duration-500 hover:to-amber-400 relative group-hover:shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+                                  style={{ height: `${heightPct}%` }}
+                                >
+                                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                      {day.count}
+                                   </div>
+                                </div>
+                             </div>
+                             <span className="text-xs text-slate-500 mt-3 font-medium">{day.date}</span>
+                          </div>
+                       );
+                    })}
+                 </div>
+              </div>
+
+              {/* Distribuição por Tipo e Estado */}
+              <div className="space-y-6">
+                 {/* Top Tipos */}
+                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                       <PieChart size={18} className="text-slate-400" /> Demandas Mais Procuradas
+                    </h3>
+                    <div className="space-y-4">
+                       {stats.topTypes.map(([type, count], idx) => (
+                          <div key={type}>
+                             <div className="flex justify-between text-xs mb-1">
+                                <span className="font-medium text-slate-700">{type}</span>
+                                <span className="text-slate-500">{count} leads</span>
+                             </div>
+                             <div className="w-full bg-slate-100 rounded-full h-2">
+                                <div 
+                                  className="bg-purple-500 h-2 rounded-full" 
+                                  style={{ width: `${(count / stats.total) * 100}%` }}
+                                ></div>
+                             </div>
+                          </div>
+                       ))}
+                       {stats.topTypes.length === 0 && <p className="text-xs text-slate-400">Sem dados suficientes.</p>}
+                    </div>
+                 </div>
+
+                 {/* Top Estados */}
+                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                       <MapPin size={18} className="text-slate-400" /> Top Estados
+                    </h3>
+                    <div className="space-y-4">
+                       {stats.topStates.map(([uf, count], idx) => (
+                          <div key={uf}>
+                             <div className="flex justify-between text-xs mb-1">
+                                <span className="font-medium text-slate-700">{uf}</span>
+                                <span className="text-slate-500">{count}</span>
+                             </div>
+                             <div className="w-full bg-slate-100 rounded-full h-2">
+                                <div 
+                                  className="bg-green-500 h-2 rounded-full" 
+                                  style={{ width: `${(count / stats.total) * 100}%` }}
+                                ></div>
+                             </div>
+                          </div>
+                       ))}
+                        {stats.topStates.length === 0 && <p className="text-xs text-slate-400">Sem dados suficientes.</p>}
+                    </div>
+                 </div>
+              </div>
+           </div>
         </div>
       </main>
 
