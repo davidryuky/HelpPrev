@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Volume2, XCircle, Download } from 'lucide-react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Activity, Download } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -43,6 +43,9 @@ export const Admin: React.FC = () => {
   const [emailSending, setEmailSending] = useState(false);
   const [emailData, setEmailData] = useState({ to: '', subject: '', body: '' });
   
+  // Estado para gráfico
+  const [hoveredChartIndex, setHoveredChartIndex] = useState<number | null>(null);
+
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -471,6 +474,25 @@ Equipe MeuPrev`;
     return { total, todayCount, conversionRate, mobileRate, topTypes, topStates, last7Days };
   }, [leads]);
 
+  // --- PREPARAÇÃO DADOS GRÁFICO (SVG) ---
+  const chartData = useMemo(() => {
+    if (stats.last7Days.length === 0) return { points: '', data: [] };
+    
+    const maxVal = Math.max(...stats.last7Days.map(d => d.count), 1);
+    
+    const dataPoints = stats.last7Days.map((d, i) => {
+      // X = percentagem da largura
+      const x = (i / (stats.last7Days.length - 1)) * 100;
+      // Y = percentagem da altura (invertido, 0 é topo). Deixamos margem de 10% em cima/baixo
+      const y = 100 - ((d.count / maxVal) * 80) - 10;
+      return { x, y, ...d };
+    });
+    
+    const pointsStr = dataPoints.map(p => `${p.x},${p.y}`).join(' ');
+    
+    return { points: pointsStr, data: dataPoints };
+  }, [stats.last7Days]);
+
   // --- VIEW: LOGIN ---
   if (!isAuthenticated) {
     return (
@@ -799,33 +821,72 @@ Equipe MeuPrev`;
            </div>
 
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Gráfico de Barras - Últimos 7 dias */}
+              {/* Gráfico de Linha Minimalista - Últimos 7 dias */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
                  <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <TrendingUp size={18} className="text-slate-400" /> Leads nos Últimos 7 Dias
+                    <Activity size={18} className="text-amber-500" /> Fluxo de Leads (7 Dias)
                  </h3>
-                 <div className="h-64 flex items-end justify-between gap-4 px-2">
-                    {stats.last7Days.map((day, idx) => {
-                       // Encontrar o maior valor para calcular altura relativa
-                       const max = Math.max(...stats.last7Days.map(d => d.count), 1); 
-                       const heightPct = (day.count / max) * 100;
-                       return (
-                          <div key={idx} className="flex flex-col items-center flex-1 group">
-                             <div className="relative w-full bg-slate-100 rounded-t-lg overflow-hidden flex items-end h-48 transition-all hover:bg-slate-200">
-                                <div 
-                                  className="w-full bg-gradient-to-t from-amber-500 to-amber-300 rounded-t-lg transition-all duration-500 hover:to-amber-400 relative group-hover:shadow-[0_0_15px_rgba(245,158,11,0.5)]"
-                                  style={{ height: `${heightPct}%` }}
-                                >
-                                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                      {day.count}
-                                   </div>
-                                </div>
-                             </div>
-                             <span className="text-xs text-slate-500 mt-3 font-medium">{day.date}</span>
-                          </div>
-                       );
-                    })}
+                 <div 
+                    className="relative h-64 w-full select-none" 
+                    onMouseLeave={() => setHoveredChartIndex(null)}
+                 >
+                   <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                     {/* Grid lines (Minimalist) */}
+                     <line x1="0" y1="90" x2="100" y2="90" stroke="#f1f5f9" strokeWidth="0.5" />
+                     
+                     {/* The Line */}
+                     {chartData.points && (
+                       <polyline
+                          fill="none"
+                          stroke="#f59e0b"
+                          strokeWidth="1.5"
+                          points={chartData.points}
+                          vectorEffect="non-scaling-stroke"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                       />
+                     )}
+
+                     {/* Interaction Points */}
+                     {chartData.data.map((p, i) => (
+                        <g key={i} onMouseEnter={() => setHoveredChartIndex(i)}>
+                           {/* Large invisible hit target */}
+                           <circle cx={p.x} cy={p.y} r="8" fill="transparent" className="cursor-pointer" vectorEffect="non-scaling-stroke" />
+                           {/* Visible dot only on hover */}
+                           <circle
+                              cx={p.x}
+                              cy={p.y}
+                              r={hoveredChartIndex === i ? 2.5 : 1.5}
+                              fill={hoveredChartIndex === i ? "#fff" : "#f59e0b"}
+                              stroke="#f59e0b"
+                              strokeWidth={hoveredChartIndex === i ? 1.5 : 0}
+                              vectorEffect="non-scaling-stroke"
+                              className="transition-all duration-200"
+                           />
+                        </g>
+                     ))}
+                   </svg>
+
+                   {/* Tooltip Layer */}
+                   {hoveredChartIndex !== null && chartData.data[hoveredChartIndex] && (
+                        <div
+                            className="absolute transform -translate-x-1/2 -translate-y-full bg-slate-900 text-white text-xs py-2 px-3 rounded-lg shadow-xl pointer-events-none transition-all z-10 flex flex-col items-center"
+                            style={{
+                                left: `${chartData.data[hoveredChartIndex].x}%`,
+                                top: `${chartData.data[hoveredChartIndex].y}%`,
+                                marginTop: '-12px'
+                            }}
+                        >
+                            <span className="font-bold text-lg leading-none">{chartData.data[hoveredChartIndex].count}</span>
+                            <span className="text-slate-400 text-[10px] uppercase font-semibold">{chartData.data[hoveredChartIndex].date}</span>
+                            {/* Seta do tooltip */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-slate-900"></div>
+                        </div>
+                    )}
                  </div>
+                 {chartData.data.length === 0 && (
+                   <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados recentes</div>
+                 )}
               </div>
 
               {/* Distribuição por Tipo e Estado */}
