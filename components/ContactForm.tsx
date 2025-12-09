@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Send, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Send, CheckCircle, Loader2, AlertCircle, MapPin, ShieldCheck, Lock } from 'lucide-react';
 
 interface ContactFormProps {
   onSuccess?: () => void;
   isModal?: boolean;
 }
 
+const BRAZIL_STATES = [
+  "Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", "Distrito Federal",
+  "Espírito Santo", "Goiás", "Maranhão", "Mato Grosso", "Mato Grosso do Sul",
+  "Minas Gerais", "Pará", "Paraíba", "Paraná", "Pernambuco", "Piauí",
+  "Rio de Janeiro", "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia",
+  "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"
+];
+
 export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = false }) => {
   const [formData, setFormData] = useState({
     name: '',
     whatsapp: '',
+    state: '',
     type: 'Aposentadoria'
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [errors, setErrors] = useState({ name: '', whatsapp: '' });
+  const [errors, setErrors] = useState({ name: '', whatsapp: '', state: '' });
   const [techData, setTechData] = useState<any>({});
 
   // Coleta dados técnicos ao montar o componente
@@ -58,7 +67,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
 
   const validateForm = () => {
     let isValid = true;
-    const newErrors = { name: '', whatsapp: '' };
+    const newErrors = { name: '', whatsapp: '', state: '' };
 
     // Validação Nome (Mínimo 2 palavras)
     const nameParts = formData.name.trim().split(/\s+/);
@@ -71,6 +80,12 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
     const phoneDigits = formData.whatsapp.replace(/\D/g, '');
     if (phoneDigits.length < 10) {
       newErrors.whatsapp = 'Digite um número de telefone válido com DDD.';
+      isValid = false;
+    }
+
+    // Validação Estado
+    if (!formData.state) {
+      newErrors.state = 'Selecione seu estado.';
       isValid = false;
     }
 
@@ -101,8 +116,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
 
       if (response.ok) {
         setStatus('success');
-        // Não resetamos mais o status nem chamamos onSuccess automaticamente.
-        // A mensagem de sucesso ficará fixa na tela.
       } else {
         setStatus('error');
       }
@@ -114,15 +127,15 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
 
   return (
     <div id="contato" className={`w-full max-w-lg mx-auto relative group ${isModal ? '' : ''}`}>
-      {/* Efeito de brilho no fundo (apenas se não for modal para não poluir o popup) */}
+      {/* Efeito de brilho no fundo (apenas se não for modal) */}
       {!isModal && (
         <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
       )}
       
       <div className={`relative bg-white rounded-xl ${isModal ? '' : 'shadow-2xl border border-slate-100'} p-8`}>
-        <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-slate-900 mb-2">Análise Gratuita do Caso</h3>
-          <p className="text-slate-500">Preencha abaixo e um especialista entrará em contato rapidamente.</p>
+        <div className={`text-center mb-8 ${isModal ? 'mt-6' : ''}`}>
+          <h3 className="text-2xl font-bold text-slate-900 mb-2">Vamos achar seu advogado</h3>
+          <p className="text-slate-500">Preencha abaixo que nossa rede de parceiros vai analisar seu caso de graça.</p>
         </div>
 
         {status === 'success' ? (
@@ -130,11 +143,11 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
             <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
               <CheckCircle size={32} />
             </div>
-            <h4 className="text-xl font-bold text-slate-900 mb-3">Solicitação Recebida com Sucesso!</h4>
+            <h4 className="text-xl font-bold text-slate-900 mb-3">Tudo certo! Recebemos seu pedido.</h4>
             <div className="text-slate-600 space-y-2">
-              <p>Nossa equipe já está analisando seus dados.</p>
+              <p>Nossa equipe já está procurando o especialista ideal para você.</p>
               <p className="font-medium text-slate-800 bg-slate-50 p-4 rounded-lg border border-slate-100 leading-relaxed">
-                Fique tranquilo(a): entendemos a urgência e a importância do seu caso. Um advogado especialista vai revisar suas informações e entrará em contato pelo WhatsApp o mais breve possível para te orientar sobre os próximos passos.
+                Fique tranquilo(a): Sabemos que seu caso é urgente. Um advogado parceiro vai te chamar no WhatsApp o mais breve possível para explicar o que fazer.
               </p>
             </div>
           </div>
@@ -169,23 +182,50 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Ajuda</label>
-              <div className="relative">
-                <select 
-                  className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none appearance-none bg-white"
-                  value={formData.type}
-                  onChange={(e) => setFormData({...formData, type: e.target.value})}
-                >
-                  <option value="Aposentadoria">Aposentadoria Negada</option>
-                  <option value="Auxílio Doença">Auxílio Doença</option>
-                  <option value="BPC/LOAS">BPC / LOAS</option>
-                  <option value="Pensão">Pensão por Morte</option>
-                  <option value="Revisão">Revisão de Valor</option>
-                  <option value="Outros">Outros Assuntos</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-500">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-1">
+                 <label className="block text-sm font-medium text-slate-700 mb-1">Seu Estado</label>
+                 <div className="relative">
+                    <select 
+                      className={`w-full px-4 py-3 rounded-lg border ${errors.state ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-amber-500'} focus:ring-2 transition-all outline-none appearance-none bg-white`}
+                      value={formData.state}
+                      onChange={(e) => {
+                        setFormData({...formData, state: e.target.value});
+                        if (errors.state) setErrors({...errors, state: ''});
+                      }}
+                    >
+                      <option value="">Selecione</option>
+                      {BRAZIL_STATES.map(uf => (
+                        <option key={uf} value={uf}>{uf}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
+                      <MapPin size={16} />
+                    </div>
+                 </div>
+                 {errors.state && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">{errors.state}</p>
+                  )}
+              </div>
+
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Preciso de ajuda com:</label>
+                <div className="relative">
+                  <select 
+                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none appearance-none bg-white text-sm"
+                    value={formData.type}
+                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                  >
+                    <option value="Aposentadoria">Aposentadoria</option>
+                    <option value="Auxílio Doença">Auxílio Doença</option>
+                    <option value="BPC/LOAS">BPC / LOAS</option>
+                    <option value="Pensão">Pensão por Morte</option>
+                    <option value="Revisão">Revisão de Valor</option>
+                    <option value="Outros">Outros</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-500">
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -197,15 +237,23 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, isModal = f
             >
               {status === 'loading' ? (
                 <>
-                  <Loader2 className="animate-spin" /> Processando...
+                  <Loader2 className="animate-spin" /> Procurando Advogado...
                 </>
               ) : (
                 <>
                   <Send size={18} />
-                  Solicitar Ajuda Agora
+                  Achar Advogado Agora
                 </>
               )}
             </button>
+            
+            <div className="bg-green-50 border border-green-100 rounded-lg p-3 flex items-center justify-center gap-2 mt-4">
+              <ShieldCheck className="text-green-600 w-5 h-5 flex-shrink-0" />
+              <div className="flex flex-col md:flex-row md:items-center md:gap-1">
+                <span className="text-green-800 font-bold text-xs uppercase tracking-wider">100% Seguro:</span>
+                <span className="text-green-700 text-xs">Seus dados são protegidos e o serviço é gratuito.</span>
+              </div>
+            </div>
           </form>
         )}
       </div>

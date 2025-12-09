@@ -2,10 +2,10 @@ import React from 'react';
 
 export const Stats: React.FC = () => {
   const stats = [
-    { value: "99%", label: "Taxa de Sucesso", desc: "Em reversões administrativas e judiciais" },
-    { value: "+5.000", label: "Casos Aprovados", desc: "Famílias com seus direitos garantidos" },
-    { value: "24h", label: "Agilidade", desc: "Prazo máximo para primeira análise" },
-    { value: "+50", label: "Advogados", desc: "Equipe especializada e dedicada a você" }
+    { value: "Gratuito", label: "Para encontrar", desc: "Você não paga nada para usar nossa plataforma" },
+    { value: "+5.000", label: "Pessoas Ajudadas", desc: "Famílias com seus direitos garantidos" },
+    { value: "24h", label: "Agilidade", desc: "Tempo médio para um advogado te chamar" },
+    { value: "+50", label: "Advogados Parceiros", desc: "Rede de especialistas verificados em todo Brasil" }
   ];
 
   return (

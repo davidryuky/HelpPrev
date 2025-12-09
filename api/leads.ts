@@ -24,24 +24,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         whatsapp VARCHAR(255) NOT NULL,
+        state VARCHAR(50) DEFAULT NULL,
         type VARCHAR(255) NOT NULL,
         status VARCHAR(50) DEFAULT 'pendente',
         notes TEXT,
+        ip VARCHAR(45),
+        metadata TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    // Migração "safada" para garantir que as colunas novas existam em tabelas antigas
+    // Migração para garantir que as colunas novas existam em tabelas antigas
     try {
       await pool.query("ALTER TABLE leads ADD COLUMN ip VARCHAR(45)");
-    } catch (e) {} // Ignora erro se coluna já existe
+    } catch (e) {} 
     try {
       await pool.query("ALTER TABLE leads ADD COLUMN metadata TEXT");
-    } catch (e) {} // Ignora erro se coluna já existe
+    } catch (e) {} 
+    try {
+      await pool.query("ALTER TABLE leads ADD COLUMN state VARCHAR(50)");
+    } catch (e) {
+      // Se a coluna já existe, tentamos modificar para aumentar o tamanho se for pequeno (ex: varchar(2))
+      try {
+        await pool.query("ALTER TABLE leads MODIFY COLUMN state VARCHAR(50)");
+      } catch (e2) {}
+    }
 
     // 2. Método POST (Público - Salvar Lead)
     if (req.method === 'POST') {
-      const { name, whatsapp, type, metadata } = req.body;
+      const { name, whatsapp, type, state, metadata } = req.body;
       
       // Captura IP
       const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || '';
@@ -51,8 +62,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       await pool.execute(
-        'INSERT INTO leads (name, whatsapp, type, ip, metadata) VALUES (?, ?, ?, ?, ?)',
-        [name, whatsapp, type, ip, JSON.stringify(metadata || {})]
+        'INSERT INTO leads (name, whatsapp, state, type, ip, metadata) VALUES (?, ?, ?, ?, ?, ?)',
+        [name, whatsapp, state || '', type, ip, JSON.stringify(metadata || {})]
       );
       
       return res.status(201).json({ message: 'Contato salvo com sucesso!' });
@@ -66,8 +77,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // 3. Método GET (Privado - Listar Leads)
     if (req.method === 'GET') {
-      // Adiciona filtro por ID para exclusão segura se necessário, mas aqui listamos todos
-      // Adicionamos suporte a busca (opcional, mas mantendo a query simples por enquanto)
       const [rows] = await pool.query('SELECT * FROM leads ORDER BY created_at DESC');
       return res.status(200).json(rows);
     } 

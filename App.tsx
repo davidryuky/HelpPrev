@@ -16,6 +16,7 @@ import { About } from './components/About';
 import { Team } from './components/Team';
 import { Blog } from './components/Blog';
 import { Privacy } from './components/Privacy';
+import { DataSecurity } from './components/DataSecurity';
 
 export type PageView = 'home' | 'about' | 'team' | 'blog' | 'privacy';
 
@@ -57,6 +58,7 @@ const App: React.FC = () => {
             <CTASection />
             <Testimonials />
             <FAQ />
+            <DataSecurity onOpenModal={openModal} />
           </>
         )}
 
@@ -78,11 +80,12 @@ const App: React.FC = () => {
           >
             <button 
               onClick={closeModal}
-              className="absolute top-4 right-4 z-10 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-red-500 p-2 rounded-full transition-colors"
+              className="absolute top-4 right-4 z-50 bg-slate-200 hover:bg-red-100 text-slate-600 hover:text-red-600 p-2 rounded-full transition-colors shadow-sm"
+              title="Fechar"
             >
               <X size={20} />
             </button>
-            <ContactForm isModal={true} onSuccess={() => setTimeout(closeModal, 2500)} />
+            <ContactForm isModal={true} onSuccess={() => {}} />
           </div>
           {/* Overlay click to close */}
           <div className="absolute inset-0 -z-10" onClick={closeModal}></div>

@@ -14,21 +14,21 @@ export const CTASection: React.FC = () => {
         
         <div className="md:w-1/2 text-center md:text-left">
           <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-            Não perca mais tempo. <br/>
-            <span className="text-amber-500">Recupere seu benefício.</span>
+            Pare de procurar. <br/>
+            <span className="text-amber-500">Nós achamos para você.</span>
           </h2>
           <p className="text-lg text-slate-300 mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed">
-            Cada dia que passa é dinheiro a menos no seu bolso. Nossa equipe especializada já ajudou mais de 5.000 pessoas a reverterem negativas do INSS. Deixe seus dados que nós ligamos para você.
+            Não gaste tempo e sola de sapato procurando escritórios. Temos uma lista com os melhores advogados do Brasil prontos para atender seu caso.
           </p>
           
           <div className="hidden md:flex flex-col gap-4 border-l-4 border-amber-500 pl-6">
             <div>
-              <strong className="text-white block text-lg">Sem Custo Inicial</strong>
-              <span className="text-slate-400 text-sm">Análise do caso é 100% gratuita.</span>
+              <strong className="text-white block text-lg">Sem Custo para Usar</strong>
+              <span className="text-slate-400 text-sm">Nossa plataforma é gratuita para quem procura ajuda.</span>
             </div>
             <div>
-              <strong className="text-white block text-lg">Atendimento Ágil</strong>
-              <span className="text-slate-400 text-sm">Resposta em até 24 horas úteis.</span>
+              <strong className="text-white block text-lg">Atendimento Rápido</strong>
+              <span className="text-slate-400 text-sm">Um especialista entrará em contato pelo WhatsApp para te ouvir com atenção.</span>
             </div>
           </div>
         </div>

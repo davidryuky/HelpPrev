@@ -6,20 +6,20 @@ export const Testimonials: React.FC = () => {
     {
       name: "Maria de Lourdes",
       role: "Aposentada por Invalidez",
-      text: "O INSS negou meu pedido 3 vezes. Eu já tinha desistido. Encontrei a HelpPrev e em 2 meses eles reverteram a situação. Recebi todos os atrasados!",
-      image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+      text: "O INSS negou meu pedido 3 vezes. Eu já tinha desistido. Encontrei o MeuPrev e em 2 meses eles reverteram a situação. Recebi todos os atrasados!",
+      image: "https://i.postimg.cc/L8s5WdcL/434169537-7640047612712221-4074087201507959090-n.jpg"
     },
     {
       name: "João Silva",
       role: "Aposentadoria Especial",
       text: "Equipe fantástica. Me atenderam super rápido pelo WhatsApp, tiraram todas as dúvidas e conseguiram minha aposentadoria especial que eu nem sabia que tinha direito.",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+      image: "https://i.postimg.cc/8zCcY824/464940954-8598270866931744-404034374802692466-n.jpg"
     },
     {
       name: "Ana Paula",
-      role: "Salário Maternidade",
-      text: "Eu estava desempregada quando meu filho nasceu e achei que não tinha direito. Eles analisaram, viram que eu estava no período de graça e conseguiram meu benefício.",
-      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
+      role: "Pensão por Morte",
+      text: "Quando meu marido faleceu, o INSS negou a pensão dizendo que ele não era segurado. Graças à advogada indicada pelo site, provamos o direito na justiça e garanti o futuro dos meus filhos.",
+      image: "https://i.postimg.cc/4x3y0CDB/452916944-7956736357726421-2104946427979049056-n.jpg"
     }
   ];
 
