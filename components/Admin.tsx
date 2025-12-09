@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Volume2, XCircle } from 'lucide-react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Volume2, XCircle, Download } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -371,6 +371,52 @@ Equipe MeuPrev`;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedLeads = filteredLeads.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+  // --- LÓGICA DE EXPORTAÇÃO CSV ---
+  const handleExportCSV = () => {
+    if (filteredLeads.length === 0) {
+      alert("Nenhum dado disponível para exportar com os filtros atuais.");
+      return;
+    }
+
+    const headers = [
+      "ID",
+      "Nome",
+      "WhatsApp",
+      "Estado",
+      "Tipo Demanda",
+      "Status",
+      "Data Criação",
+      "Anotações",
+      "IP"
+    ];
+
+    const rows = filteredLeads.map(lead => [
+      lead.id,
+      `"${lead.name}"`, // Quote strings to handle commas
+      lead.whatsapp,
+      lead.state || "N/A",
+      lead.type,
+      lead.status,
+      new Date(lead.created_at).toLocaleString('pt-BR'),
+      `"${(lead.notes || '').replace(/"/g, '""')}"`, // Escape quotes
+      lead.ip || ""
+    ]);
+
+    const csvContent = [
+      "\uFEFF" + headers.join(","), // Add BOM for Excel UTF-8 compatibility
+      ...rows.map(r => r.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `leads_export_${statusFilter}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // --- LÓGICA DO DASHBOARD ---
   
   const stats = useMemo(() => {
@@ -532,8 +578,8 @@ Equipe MeuPrev`;
         
         {/* Toolbar de Filtros */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-            <div className="relative">
+          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto items-center">
+            <div className="relative w-full md:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
               <input 
                 type="text" 
@@ -544,7 +590,7 @@ Equipe MeuPrev`;
               />
             </div>
 
-            <div className="relative">
+            <div className="relative w-full md:w-auto">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
               <select 
                 className="pl-10 pr-8 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none appearance-none bg-white w-full md:w-48 text-sm cursor-pointer"
@@ -557,10 +603,20 @@ Equipe MeuPrev`;
                 <option value="em_atendimento">Em Atendimento</option>
               </select>
             </div>
+
+            <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
+
+            <button 
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors w-full md:w-auto justify-center"
+              title="Exportar leads exibidos atualmente"
+            >
+              <Download size={16} /> Exportar CSV
+            </button>
           </div>
           
-          <div className="text-sm text-slate-500 font-medium">
-            Total de {filteredLeads.length} leads encontrados
+          <div className="text-sm text-slate-500 font-medium whitespace-nowrap">
+            {filteredLeads.length} leads encontrados
           </div>
         </div>
 
