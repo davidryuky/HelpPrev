@@ -461,39 +461,48 @@ Equipe MeuPrev`;
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5); 
 
-    // Últimos 7 dias
-    const last7Days = [];
-    for (let i = 6; i >= 0; i--) {
+    // Últimos 30 dias (Atualizado)
+    const last30Days = [];
+    for (let i = 29; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
       const fullDateStr = d.toLocaleDateString('pt-BR'); 
       
       const count = leads.filter(l => new Date(l.created_at).toLocaleDateString('pt-BR') === fullDateStr).length;
-      last7Days.push({ date: dateStr, count });
+      last30Days.push({ date: dateStr, count });
     }
 
-    return { total, todayCount, conversionRate, topTypes, topStates, last7Days };
+    return { total, todayCount, conversionRate, topTypes, topStates, last30Days };
   }, [leads]);
 
   // --- PREPARAÇÃO DADOS GRÁFICO (SVG) ---
   const chartData = useMemo(() => {
-    if (stats.last7Days.length === 0) return { points: '', data: [] };
+    if (stats.last30Days.length === 0) return { points: '', data: [], max: 0, avg: 0 };
     
-    const maxVal = Math.max(...stats.last7Days.map(d => d.count), 1);
+    const values = stats.last30Days.map(d => d.count);
+    const maxVal = Math.max(...values, 5); // Minimum cap of 5 for scaling
     
-    const dataPoints = stats.last7Days.map((d, i) => {
-      // X = percentagem da largura
-      const x = (i / (stats.last7Days.length - 1)) * 100;
-      // Y = percentagem da altura (invertido, 0 é topo). Deixamos margem de 10% em cima/baixo
+    const dataPoints = stats.last30Days.map((d, i) => {
+      // X = percentagem da largura (0 a 100)
+      const x = (i / (stats.last30Days.length - 1)) * 100;
+      
+      // Y = percentagem da altura (invertido, 0 é topo).
+      // Usamos 80% da altura para o gráfico ter margem (padding) de 10% em cima e em baixo.
       const y = 100 - ((d.count / maxVal) * 80) - 10;
+      
       return { x, y, ...d };
     });
     
     const pointsStr = dataPoints.map(p => `${p.x},${p.y}`).join(' ');
     
-    return { points: pointsStr, data: dataPoints };
-  }, [stats.last7Days]);
+    return { 
+      points: pointsStr, 
+      data: dataPoints, 
+      max: maxVal,
+      avg: Math.round(maxVal / 2) // Midpoint para o grid
+    };
+  }, [stats.last30Days]);
 
   // --- VIEW: LOGIN ---
   if (!isAuthenticated) {
@@ -823,68 +832,83 @@ Equipe MeuPrev`;
            </div>
 
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Gráfico de Linha Minimalista - Últimos 7 dias */}
+              {/* Gráfico de Linha Minimalista - Últimos 30 dias */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
-                 <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <Activity size={18} className="text-amber-500" /> Fluxo de Leads (7 Dias)
-                 </h3>
+                 <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        <Activity size={18} className="text-amber-500" /> Fluxo de Leads (30 Dias)
+                    </h3>
+                    <div className="text-xs text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded">
+                        Média Diária: {(stats.last30Days.reduce((acc, curr) => acc + curr.count, 0) / 30).toFixed(1)}
+                    </div>
+                 </div>
+                 
                  <div 
-                    className="relative h-64 w-full select-none" 
+                    className="relative h-64 w-full select-none pl-8" 
                     onMouseLeave={() => setHoveredChartIndex(null)}
                  >
-                   <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                     {/* Grid lines (Minimalist) */}
-                     <line x1="0" y1="90" x2="100" y2="90" stroke="#f1f5f9" strokeWidth="0.5" />
-                     
-                     {/* The Line */}
-                     {chartData.points && (
-                       <polyline
-                          fill="none"
-                          stroke="#f59e0b"
-                          strokeWidth="1.5"
-                          points={chartData.points}
-                          vectorEffect="non-scaling-stroke"
-                          strokeLinejoin="round"
-                          strokeLinecap="round"
-                       />
-                     )}
+                   {/* Y Axis Labels (Absolute positioning) */}
+                   <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col justify-between text-[10px] text-slate-400 font-medium py-[10%] pr-2 border-r border-slate-100">
+                      <span className="text-right">{chartData.max}</span>
+                      <span className="text-right">{chartData.avg}</span>
+                      <span className="text-right">0</span>
+                   </div>
 
-                     {/* Interaction Points */}
-                     {chartData.data.map((p, i) => (
-                        <g key={i} onMouseEnter={() => setHoveredChartIndex(i)}>
-                           {/* Large invisible hit target */}
-                           <circle cx={p.x} cy={p.y} r="8" fill="transparent" className="cursor-pointer" vectorEffect="non-scaling-stroke" />
-                           {/* Visible dot only on hover */}
-                           <circle
-                              cx={p.x}
-                              cy={p.y}
-                              r={hoveredChartIndex === i ? 2.5 : 1.5}
-                              fill={hoveredChartIndex === i ? "#fff" : "#f59e0b"}
+                   {/* The Chart Area */}
+                   <div className="relative w-full h-full">
+                       {/* SVG Layer for the Line (Stretches) */}
+                       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible z-0">
+                         {/* Grid lines */}
+                         <line x1="0" y1="10" x2="100" y2="10" stroke="#f1f5f9" strokeWidth="0.5" strokeDasharray="2,2"/>
+                         <line x1="0" y1="50" x2="100" y2="50" stroke="#f1f5f9" strokeWidth="0.5" strokeDasharray="2,2"/>
+                         <line x1="0" y1="90" x2="100" y2="90" stroke="#f1f5f9" strokeWidth="0.5" />
+                         
+                         {/* The Line */}
+                         {chartData.points && (
+                           <polyline
+                              fill="none"
                               stroke="#f59e0b"
-                              strokeWidth={hoveredChartIndex === i ? 1.5 : 0}
+                              strokeWidth="1.5"
+                              points={chartData.points}
                               vectorEffect="non-scaling-stroke"
-                              className="transition-all duration-200"
+                              strokeLinejoin="round"
+                              strokeLinecap="round"
+                              className="drop-shadow-sm"
                            />
-                        </g>
-                     ))}
-                   </svg>
+                         )}
+                       </svg>
 
-                   {/* Tooltip Layer */}
-                   {hoveredChartIndex !== null && chartData.data[hoveredChartIndex] && (
-                        <div
-                            className="absolute transform -translate-x-1/2 -translate-y-full bg-slate-900 text-white text-xs py-2 px-3 rounded-lg shadow-xl pointer-events-none transition-all z-10 flex flex-col items-center"
-                            style={{
-                                left: `${chartData.data[hoveredChartIndex].x}%`,
-                                top: `${chartData.data[hoveredChartIndex].y}%`,
-                                marginTop: '-12px'
-                            }}
-                        >
-                            <span className="font-bold text-lg leading-none">{chartData.data[hoveredChartIndex].count}</span>
-                            <span className="text-slate-400 text-[10px] uppercase font-semibold">{chartData.data[hoveredChartIndex].date}</span>
-                            {/* Seta do tooltip */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-slate-900"></div>
-                        </div>
-                    )}
+                       {/* HTML Layer for Dots (Prevents Distortion of Circles) */}
+                       {chartData.data.map((p, i) => (
+                           <div 
+                              key={i}
+                              className="absolute z-10 group"
+                              style={{ 
+                                  left: `${p.x}%`, 
+                                  top: `${p.y}%`,
+                                  transform: 'translate(-50%, -50%)' 
+                              }}
+                              onMouseEnter={() => setHoveredChartIndex(i)}
+                           >
+                              {/* Invisible larger hit area */}
+                              <div className="w-4 h-4 rounded-full bg-transparent cursor-pointer"></div>
+                              
+                              {/* Visible Dot */}
+                              <div 
+                                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-500 bg-white transition-all duration-200 pointer-events-none ${hoveredChartIndex === i ? 'w-3 h-3 border-amber-600 shadow-md scale-125' : 'w-1.5 h-1.5'}`}
+                              ></div>
+
+                               {/* Tooltip (Only visible on hover) */}
+                               {hoveredChartIndex === i && (
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-xs py-1.5 px-3 rounded-lg shadow-xl whitespace-nowrap z-20 pointer-events-none flex flex-col items-center animate-in fade-in zoom-in-95 duration-150">
+                                        <span className="font-bold text-base">{p.count}</span>
+                                        <span className="text-[10px] text-slate-400 uppercase font-semibold">{p.date}</span>
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-slate-900"></div>
+                                    </div>
+                               )}
+                           </div>
+                       ))}
+                   </div>
                  </div>
                  {chartData.data.length === 0 && (
                    <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados recentes</div>
