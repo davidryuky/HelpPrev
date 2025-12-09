@@ -26,18 +26,36 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<PageView>('home');
 
   useEffect(() => {
-    // Verificação simples de rota para admin
+    // 1. Verificação de Rota Admin
     if (window.location.pathname === '/admin') {
       setIsAdminRoute(true);
     } else {
-      // Registra visita apenas se não for admin
-      // Usa session storage para evitar contar reload na mesma sessão como visita nova (opcional, aqui contando tudo)
+      // 2. Registro de Visita
       const hasVisited = sessionStorage.getItem('has_visited');
       if (!hasVisited) {
         fetch('/api/visits', { method: 'POST' })
           .then(() => sessionStorage.setItem('has_visited', 'true'))
           .catch(err => console.error('Erro ao registrar visita', err));
       }
+
+      // 3. Injeção de Scripts Globais (Configurações do Admin)
+      fetch('/api/settings')
+        .then(res => res.json())
+        .then(data => {
+          if (data.head_scripts) {
+             try {
+                // Cria um fragmento contextual para transformar a string HTML em nós DOM reais
+                // Isso permite que tags <script> sejam executadas corretamente
+                const range = document.createRange();
+                range.selectNode(document.head);
+                const fragment = range.createContextualFragment(data.head_scripts);
+                document.head.appendChild(fragment);
+             } catch (e) {
+               console.error('Erro ao injetar scripts personalizados:', e);
+             }
+          }
+        })
+        .catch(err => console.error('Erro ao buscar configurações', err));
     }
   }, []);
 

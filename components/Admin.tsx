@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Activity, Download } from 'lucide-react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Activity, Download, Settings, Code } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -50,6 +50,11 @@ export const Admin: React.FC = () => {
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+
+  // Configurações do Site
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [headScripts, setHeadScripts] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Inicializar Áudio
   useEffect(() => {
@@ -223,6 +228,47 @@ export const Admin: React.FC = () => {
       alert('Erro de conexão ao excluir');
     }
   };
+
+  // Funções de Settings
+  const openSettings = async () => {
+    setSettingsModalOpen(true);
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setHeadScripts(data.head_scripts || '');
+      }
+    } catch (e) {
+      console.error("Erro ao carregar settings", e);
+    }
+  };
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+        },
+        body: JSON.stringify({ head_scripts: headScripts })
+      });
+
+      if (res.ok) {
+        alert('Configurações salvas! As tags serão aplicadas na próxima atualização do site.');
+        setSettingsModalOpen(false);
+      } else {
+        alert('Erro ao salvar configurações.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erro de conexão.');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
 
   // Funções de Modal
   const openLeadModal = (lead: Lead) => {
@@ -599,6 +645,17 @@ Equipe MeuPrev`;
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
             <div className="h-8 w-px bg-slate-200"></div>
+
+            {/* BOTÃO DE CONFIGURAÇÕES */}
+            <button 
+              onClick={openSettings} 
+              className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-2"
+              title="Configurações do Site"
+            >
+              <Settings size={18} />
+              <span className="hidden sm:inline">Config</span>
+            </button>
+
             <button onClick={handleLogout} className="text-sm font-medium text-red-500 hover:text-red-700">
               Sair
             </button>
@@ -968,6 +1025,66 @@ Equipe MeuPrev`;
            </div>
         </div>
       </main>
+
+       {/* Modal de Configurações do Site */}
+       {settingsModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+              <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
+                <div className="flex items-center gap-2">
+                  <Settings size={20} className="text-amber-500" />
+                  <h3 className="font-bold">Configurações Globais</h3>
+                </div>
+                <button onClick={() => setSettingsModalOpen(false)} className="text-white/80 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto">
+                 <div className="space-y-4">
+                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                      <Code className="text-amber-600 mt-1 flex-shrink-0" size={18} />
+                      <div>
+                        <h4 className="font-bold text-amber-900 text-sm">Scripts do Cabeçalho (Head)</h4>
+                        <p className="text-xs text-amber-800 mt-1">
+                          Adicione aqui scripts como Google Analytics, Facebook Pixel, Tags de Conversão, etc. 
+                          Esses códigos serão inseridos automaticamente dentro da tag <code>&lt;head&gt;</code> do site.
+                        </p>
+                      </div>
+                   </div>
+
+                   <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Código Personalizado (JS/HTML)</label>
+                      <textarea 
+                        className="w-full h-64 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none resize-none text-xs font-mono leading-relaxed bg-slate-50 text-slate-700"
+                        placeholder="<!-- Exemplo -->&#10;<script>&#10;  console.log('Pixel Ativo');&#10;</script>"
+                        value={headScripts}
+                        onChange={(e) => setHeadScripts(e.target.value)}
+                      ></textarea>
+                   </div>
+                 </div>
+              </div>
+
+              <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+                 <button 
+                    onClick={() => setSettingsModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={saveSettings}
+                    disabled={savingSettings}
+                    className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {savingSettings ? <Loader2 className="animate-spin w-4 h-4"/> : <Save size={16} />}
+                    {savingSettings ? 'Salvando...' : 'Salvar Alterações'}
+                  </button>
+              </div>
+           </div>
+        </div>
+      )}
+
 
       {/* Modal de Envio de Email */}
       {emailModalOpen && (
