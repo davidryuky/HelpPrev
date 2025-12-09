@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Monitor, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Volume2, XCircle } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -14,6 +14,9 @@ interface Lead {
   metadata?: string; // JSON string
 }
 
+// URL de som de notificação (MP3 hospedado publicamente)
+const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+
 export const Admin: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
@@ -22,9 +25,14 @@ export const Admin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [viewDataLead, setViewDataLead] = useState<Lead | null>(null); // Para o modal de dados técnicos
+  const [viewDataLead, setViewDataLead] = useState<Lead | null>(null);
   const [tempNotes, setTempNotes] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  
+  // Notificações
+  const [lastLeadId, setLastLeadId] = useState<number | null>(null);
+  const [notification, setNotification] = useState<{show: boolean, message: string} | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,6 +47,12 @@ export const Admin: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
 
+  // Inicializar Áudio
+  useEffect(() => {
+    audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+    audioRef.current.volume = 0.5;
+  }, []);
+
   // Verificar sessão ao carregar
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -47,6 +61,17 @@ export const Admin: React.FC = () => {
       fetchLeads();
     }
   }, []);
+
+  // Polling para novos leads (a cada 30 segundos)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const interval = setInterval(() => {
+      fetchLeads(true); // true = silent mode (background)
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, lastLeadId]);
 
   // Resetar paginação ao filtrar
   useEffect(() => {
@@ -91,16 +116,42 @@ export const Admin: React.FC = () => {
     localStorage.removeItem('admin_token');
     setIsAuthenticated(false);
     setLeads([]);
+    setLastLeadId(null);
   };
 
-  const fetchLeads = async () => {
-    setLoading(true);
+  const playNotificationSound = () => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(e => console.log("Erro ao reproduzir som (interação necessária):", e));
+    }
+  };
+
+  const fetchLeads = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const res = await fetch('/api/leads', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data: Lead[] = await res.json();
+        
+        // Lógica de Notificação
+        if (data.length > 0) {
+          const newestLead = data[0]; // Assumindo que a API retorna ordenado por created_at DESC
+          
+          // Se não é a primeira carga (lastLeadId não é null) e o ID novo é maior que o antigo
+          if (isBackground && lastLeadId !== null && newestLead.id > lastLeadId) {
+            playNotificationSound();
+            setNotification({
+              show: true,
+              message: `Novo lead recebido: ${newestLead.name} (${newestLead.type})`
+            });
+            // Auto hide notification after 5s
+            setTimeout(() => setNotification(null), 8000);
+          }
+          
+          setLastLeadId(newestLead.id);
+        }
+
         setLeads(data);
       } else if (res.status === 401) {
         handleLogout();
@@ -108,7 +159,7 @@ export const Admin: React.FC = () => {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -429,7 +480,25 @@ Equipe MeuPrev`;
 
   // --- VIEW: DASHBOARD ---
   return (
-    <div className="min-h-screen bg-slate-100 pb-20">
+    <div className="min-h-screen bg-slate-100 pb-20 relative">
+      {/* Toast de Notificação */}
+      {notification?.show && (
+        <div className="fixed top-24 right-4 z-50 animate-in slide-in-from-right duration-300">
+          <div className="bg-slate-800 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 max-w-sm border border-slate-700">
+            <div className="bg-green-500 p-2 rounded-full animate-pulse">
+              <Bell size={20} fill="currentColor" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-sm">Novo Lead!</h4>
+              <p className="text-xs text-slate-300">{notification.message}</p>
+            </div>
+            <button onClick={() => setNotification(null)} className="text-slate-400 hover:text-white">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Admin Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -438,7 +507,16 @@ Equipe MeuPrev`;
             <h1 className="text-xl font-bold text-slate-800 hidden sm:block">Gestão de Leads</h1>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={fetchLeads} className="p-2 text-slate-500 hover:text-amber-500 transition-colors" title="Atualizar">
+             {/* Indicador de Status do Sistema */}
+             <div className="hidden md:flex items-center gap-2 text-xs font-medium text-green-600 bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
+               <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                Monitorando em Tempo Real
+             </div>
+
+            <button onClick={() => fetchLeads(false)} className="p-2 text-slate-500 hover:text-amber-500 transition-colors" title="Atualizar">
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
             <div className="h-8 w-px bg-slate-200"></div>
