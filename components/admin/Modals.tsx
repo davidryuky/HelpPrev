@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Settings, Code, Save, Loader2, Mail, Send, Trash2, Smartphone, Globe, Fingerprint } from 'lucide-react';
-import { Lead } from '../Admin';
+import { Lead } from '../../types';
 
-// --- SETTINGS MODAL ---
 export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (scripts: string) => Promise<void>; initialScripts: string }> = ({ isOpen, onClose, onSave, initialScripts }) => {
   const [scripts, setScripts] = useState(initialScripts);
   const [saving, setSaving] = useState(false);
@@ -42,7 +41,6 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void; onS
   );
 };
 
-// --- EMAIL MODAL ---
 export const EmailModal: React.FC<{ isOpen: boolean; onClose: () => void; lead: Lead | null; onSend: (data: any) => Promise<void> }> = ({ isOpen, onClose, lead, onSend }) => {
   const [emailData, setEmailData] = useState({ to: '', subject: '', body: '' });
   const [sending, setSending] = useState(false);
@@ -86,7 +84,6 @@ export const EmailModal: React.FC<{ isOpen: boolean; onClose: () => void; lead: 
   );
 };
 
-// --- TECH DATA MODAL ---
 export const TechModal: React.FC<{ lead: Lead | null; onClose: () => void }> = ({ lead, onClose }) => {
   if (!lead) return null;
   const meta = lead.metadata ? JSON.parse(lead.metadata) : {};
@@ -121,7 +118,6 @@ export const TechModal: React.FC<{ lead: Lead | null; onClose: () => void }> = (
   );
 };
 
-// --- LEAD DETAILS MODAL ---
 export const LeadDetailsModal: React.FC<{ lead: Lead | null; onClose: () => void; onSave: (notes: string) => Promise<void>; onDelete: (id: number) => void }> = ({ lead, onClose, onSave, onDelete }) => {
   const [notes, setNotes] = useState('');
   

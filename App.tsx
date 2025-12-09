@@ -1,24 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Header } from './components/Header';
-import { Hero } from './components/Hero';
-import { Stats } from './components/Stats';
-import { WhyUs } from './components/WhyUs';
-import { Services } from './components/Services';
-import { Testimonials } from './components/Testimonials';
-import { CTASection } from './components/CTASection';
-import { FAQ } from './components/FAQ';
-import { Footer } from './components/Footer';
-import { FloatingWhatsApp } from './components/FloatingWhatsApp';
-import { Admin } from './components/Admin';
-import { ContactForm } from './components/ContactForm';
-import { About } from './components/About';
-import { Team } from './components/Team';
-import { Blog } from './components/Blog';
-import { Privacy } from './components/Privacy';
-import { DataSecurity } from './components/DataSecurity';
 
-export type PageView = 'home' | 'about' | 'team' | 'blog' | 'privacy';
+import { Header } from './components/layout/Header';
+import { Footer } from './components/layout/Footer';
+import { FloatingWhatsApp } from './components/common/FloatingWhatsApp';
+import { ContactForm } from './components/common/ContactForm';
+
+import { HomePage } from './pages/HomePage';
+import { AboutPage } from './pages/AboutPage';
+import { TeamPage } from './pages/TeamPage';
+import { BlogPage } from './pages/BlogPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { AdminPage } from './pages/AdminPage';
+
+import { PageView } from './types';
 
 const App: React.FC = () => {
   const [isAdminRoute, setIsAdminRoute] = useState(false);
@@ -26,11 +21,9 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<PageView>('home');
 
   useEffect(() => {
-    // 1. Verificação de Rota Admin
     if (window.location.pathname === '/admin') {
       setIsAdminRoute(true);
     } else {
-      // 2. Registro de Visita
       const hasVisited = sessionStorage.getItem('has_visited');
       if (!hasVisited) {
         fetch('/api/visits', { method: 'POST' })
@@ -38,23 +31,14 @@ const App: React.FC = () => {
           .catch(err => console.error('Erro ao registrar visita', err));
       }
 
-      // 3. Injeção de Scripts Globais (Configurações do Admin)
       fetch('/api/settings')
         .then(async res => {
-          // Se a resposta não for OK (ex: 404, 500), não tenta parsear JSON
           if (!res.ok) return null;
-          try {
-            return await res.json();
-          } catch (e) {
-            console.warn('Resposta da API de settings não é um JSON válido.');
-            return null;
-          }
+          try { return await res.json(); } catch (e) { return null; }
         })
         .then(data => {
           if (data && data.head_scripts) {
              try {
-                // Cria um fragmento contextual para transformar a string HTML em nós DOM reais
-                // Isso permite que tags <script> sejam executadas corretamente
                 const range = document.createRange();
                 range.selectNode(document.head);
                 const fragment = range.createContextualFragment(data.head_scripts);
@@ -77,7 +61,7 @@ const App: React.FC = () => {
   };
 
   if (isAdminRoute) {
-    return <Admin />;
+    return <AdminPage />;
   }
 
   return (
@@ -85,29 +69,16 @@ const App: React.FC = () => {
       <Header onOpenModal={openModal} onNavigate={handleNavigate} currentView={currentView} />
       
       <main className="flex-grow">
-        {currentView === 'home' && (
-          <>
-            <Hero onOpenModal={openModal} />
-            <Stats />
-            <WhyUs />
-            <Services onOpenModal={openModal} />
-            <CTASection />
-            <Testimonials />
-            <FAQ />
-            <DataSecurity onOpenModal={openModal} />
-          </>
-        )}
-
-        {currentView === 'about' && <About onOpenModal={openModal} />}
-        {currentView === 'team' && <Team onOpenModal={openModal} />}
-        {currentView === 'blog' && <Blog onOpenModal={openModal} />}
-        {currentView === 'privacy' && <Privacy />}
+        {currentView === 'home' && <HomePage onOpenModal={openModal} />}
+        {currentView === 'about' && <AboutPage onOpenModal={openModal} />}
+        {currentView === 'team' && <TeamPage onOpenModal={openModal} />}
+        {currentView === 'blog' && <BlogPage onOpenModal={openModal} />}
+        {currentView === 'privacy' && <PrivacyPage />}
       </main>
 
       <Footer onNavigate={handleNavigate} />
       <FloatingWhatsApp onClick={openModal} />
 
-      {/* Modal / Popup */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div 
@@ -123,7 +94,6 @@ const App: React.FC = () => {
             </button>
             <ContactForm isModal={true} onSuccess={() => {}} />
           </div>
-          {/* Overlay click to close */}
           <div className="absolute inset-0 -z-10" onClick={closeModal}></div>
         </div>
       )}

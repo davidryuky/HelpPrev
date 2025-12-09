@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users, Instagram, Facebook, Linkedin } from 'lucide-react';
-import { PageView } from '../types';
+import { PageView } from '../../types';
 
 interface FooterProps {
   onNavigate?: (view: PageView) => void;

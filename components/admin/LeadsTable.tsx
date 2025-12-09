@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Filter, Download, ChevronLeft, ChevronRight, Clock, CheckCircle, Briefcase, Mail, Eye, FileText, Trash2 } from 'lucide-react';
-import { Lead } from '../Admin';
+import { Lead } from '../../types';
 
 interface LeadsTableProps {
   leads: Lead[];

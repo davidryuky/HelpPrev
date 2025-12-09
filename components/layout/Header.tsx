@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Scale, Menu, X, Users } from 'lucide-react';
-import { PageView } from '../types';
+import { Menu, X, Users } from 'lucide-react';
+import { PageView } from '../../types';
 
 interface HeaderProps {
   onOpenModal: () => void;
@@ -27,7 +27,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenModal, onNavigate, current
   const handleSectionClick = (id: string) => {
     if (currentView !== 'home') {
       onNavigate('home');
-      // Aguarda um pouco para renderizar a home antes de scrollar
       setTimeout(() => {
         const element = document.getElementById(id);
         if (element) element.scrollIntoView({ behavior: 'smooth' });
@@ -51,7 +50,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenModal, onNavigate, current
       }`}
     >
       <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center gap-2 cursor-pointer" onClick={handleLogoClick}>
           <div className="bg-amber-500 p-1.5 rounded-lg">
             <Users className="text-slate-900 w-6 h-6" />
@@ -61,7 +59,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenModal, onNavigate, current
           </span>
         </div>
 
-        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
           <button onClick={() => onNavigate('home')} className={`font-medium transition-colors ${currentView === 'home' ? 'text-amber-500' : 'text-slate-200 hover:text-white'}`}>Início</button>
           <button onClick={() => onNavigate('about')} className={`font-medium transition-colors ${currentView === 'about' ? 'text-amber-500' : 'text-slate-200 hover:text-white'}`}>Quem Somos</button>
@@ -75,7 +72,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenModal, onNavigate, current
           </button>
         </nav>
 
-        {/* Mobile Menu Button */}
         <button 
           className="md:hidden text-white"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -84,7 +80,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenModal, onNavigate, current
         </button>
       </div>
 
-      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="absolute top-full left-0 right-0 bg-slate-900 shadow-xl border-t border-slate-800 p-6 flex flex-col gap-4 md:hidden">
           <button onClick={() => { onNavigate('home'); setIsMobileMenuOpen(false); }} className="text-left text-slate-200 py-2 border-b border-slate-800">Início</button>

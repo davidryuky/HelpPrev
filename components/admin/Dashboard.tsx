@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart3, TrendingUp, CalendarRange, CheckCircle, Globe, Activity, PieChart, MapPin } from 'lucide-react';
-import { Lead } from '../Admin';
+import { Lead } from '../../types';
 
 interface DashboardProps {
   leads: Lead[];
@@ -63,7 +63,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ leads, visitCount }) => {
          <BarChart3 className="text-amber-500" /> Dashboard de Performance
       </h2>
       
-      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
             <div>
@@ -96,7 +95,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ leads, visitCount }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         {/* Gráfico Linear */}
          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
             <div className="flex justify-between items-center mb-6">
                <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -140,7 +138,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ leads, visitCount }) => {
             {chartData.data.length === 0 && <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sem dados recentes</div>}
          </div>
 
-         {/* Tops */}
          <div className="space-y-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><PieChart size={18} className="text-slate-400" /> Demandas</h3>
