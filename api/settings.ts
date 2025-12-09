@@ -35,10 +35,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     `);
 
-    // GET: Buscar configurações (Público ou Privado, dependendo do uso. Aqui público para o App injetar)
+    // GET: Buscar configurações
     if (req.method === 'GET') {
       const [rows]: any = await pool.query('SELECT setting_value FROM site_settings WHERE setting_key = ?', ['head_scripts']);
-      const value = rows.length > 0 ? rows[0].setting_value : '';
+      
+      let value = '';
+      if (Array.isArray(rows) && rows.length > 0) {
+        // Garante que seja string, caso o banco retorne null
+        value = rows[0].setting_value || '';
+      }
+      
       return res.status(200).json({ head_scripts: value });
     }
 
@@ -65,6 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error: any) {
     console.error('Erro settings:', error);
-    return res.status(500).json({ error: 'Erro interno' });
+    // Retorna JSON válido de erro
+    return res.status(500).json({ error: 'Erro interno', details: error.message });
   }
 }

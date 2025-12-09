@@ -40,9 +40,18 @@ const App: React.FC = () => {
 
       // 3. Injeção de Scripts Globais (Configurações do Admin)
       fetch('/api/settings')
-        .then(res => res.json())
+        .then(async res => {
+          // Se a resposta não for OK (ex: 404, 500), não tenta parsear JSON
+          if (!res.ok) return null;
+          try {
+            return await res.json();
+          } catch (e) {
+            console.warn('Resposta da API de settings não é um JSON válido.');
+            return null;
+          }
+        })
         .then(data => {
-          if (data.head_scripts) {
+          if (data && data.head_scripts) {
              try {
                 // Cria um fragmento contextual para transformar a string HTML em nós DOM reais
                 // Isso permite que tags <script> sejam executadas corretamente
