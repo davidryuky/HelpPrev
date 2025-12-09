@@ -29,6 +29,15 @@ const App: React.FC = () => {
     // Verificação simples de rota para admin
     if (window.location.pathname === '/admin') {
       setIsAdminRoute(true);
+    } else {
+      // Registra visita apenas se não for admin
+      // Usa session storage para evitar contar reload na mesma sessão como visita nova (opcional, aqui contando tudo)
+      const hasVisited = sessionStorage.getItem('has_visited');
+      if (!hasVisited) {
+        fetch('/api/visits', { method: 'POST' })
+          .then(() => sessionStorage.setItem('has_visited', 'true'))
+          .catch(err => console.error('Erro ao registrar visita', err));
+      }
     }
   }, []);
 

@@ -22,6 +22,7 @@ export const Admin: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [visitCount, setVisitCount] = useState(0); // Novo estado para visitas
   const [loading, setLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -61,16 +62,16 @@ export const Admin: React.FC = () => {
     const token = localStorage.getItem('admin_token');
     if (token) {
       setIsAuthenticated(true);
-      fetchLeads();
+      fetchData();
     }
   }, []);
 
-  // Polling para novos leads (a cada 30 segundos)
+  // Polling para novos dados (a cada 30 segundos)
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const interval = setInterval(() => {
-      fetchLeads(true); // true = silent mode (background)
+      fetchData(true); // true = silent mode (background)
     }, 30000);
 
     return () => clearInterval(interval);
@@ -103,7 +104,7 @@ export const Admin: React.FC = () => {
       if (response.ok) {
         localStorage.setItem('admin_token', data.token);
         setIsAuthenticated(true);
-        fetchLeads();
+        fetchData();
       } else {
         setErrorMsg(data.details ? `Erro BD: ${data.details}` : (data.error || 'Erro desconhecido.'));
       }
@@ -128,8 +129,11 @@ export const Admin: React.FC = () => {
     }
   };
 
-  const fetchLeads = async (isBackground = false) => {
+  // Função unificada para buscar dados
+  const fetchData = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
+    
+    // Busca Leads
     try {
       const res = await fetch('/api/leads', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
@@ -137,27 +141,33 @@ export const Admin: React.FC = () => {
       if (res.ok) {
         const data: Lead[] = await res.json();
         
-        // Lógica de Notificação
         if (data.length > 0) {
-          const newestLead = data[0]; // Assumindo que a API retorna ordenado por created_at DESC
-          
-          // Se não é a primeira carga (lastLeadId não é null) e o ID novo é maior que o antigo
+          const newestLead = data[0];
           if (isBackground && lastLeadId !== null && newestLead.id > lastLeadId) {
             playNotificationSound();
             setNotification({
               show: true,
               message: `Novo lead recebido: ${newestLead.name} (${newestLead.type})`
             });
-            // Auto hide notification after 5s
             setTimeout(() => setNotification(null), 8000);
           }
-          
           setLastLeadId(newestLead.id);
         }
-
         setLeads(data);
       } else if (res.status === 401) {
         handleLogout();
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    // Busca Visitas
+    try {
+      const resVisits = await fetch('/api/visits');
+      if (resVisits.ok) {
+        const dataVisits = await resVisits.json();
+        setVisitCount(dataVisits.count);
       }
     } catch (err) {
       console.error(err);
@@ -336,7 +346,6 @@ Equipe MeuPrev`;
       else if (ua.includes('Macintosh')) score += 60;
       else if (ua.includes('iPad')) score += 40;
       else if (ua.includes('Android')) {
-        // Tentar detectar versões mais novas
         if (ua.includes('Android 13') || ua.includes('Android 14') || ua.includes('Android 15')) score += 30;
         else score += 10;
       } else if (ua.includes('Windows')) score += 20;
@@ -395,18 +404,18 @@ Equipe MeuPrev`;
 
     const rows = filteredLeads.map(lead => [
       lead.id,
-      `"${lead.name}"`, // Quote strings to handle commas
+      `"${lead.name}"`, 
       lead.whatsapp,
       lead.state || "N/A",
       lead.type,
       lead.status,
       new Date(lead.created_at).toLocaleString('pt-BR'),
-      `"${(lead.notes || '').replace(/"/g, '""')}"`, // Escape quotes
+      `"${(lead.notes || '').replace(/"/g, '""')}"`, 
       lead.ip || ""
     ]);
 
     const csvContent = [
-      "\uFEFF" + headers.join(","), // Add BOM for Excel UTF-8 compatibility
+      "\uFEFF" + headers.join(","), 
       ...rows.map(r => r.join(","))
     ].join("\n");
 
@@ -434,13 +443,6 @@ Equipe MeuPrev`;
     const inService = leads.filter(l => l.status === 'em_atendimento' || l.status === 'lido').length;
     const conversionRate = total > 0 ? Math.round((inService / total) * 100) : 0;
 
-    // Mobile Check (Simples baseado em userAgent no metadata)
-    let mobileCount = 0;
-    leads.forEach(l => {
-      if(l.metadata && (l.metadata.includes('Android') || l.metadata.includes('iPhone'))) mobileCount++;
-    });
-    const mobileRate = total > 0 ? Math.round((mobileCount / total) * 100) : 0;
-
     // Tipos
     const byType: {[key: string]: number} = {};
     leads.forEach(l => {
@@ -448,7 +450,7 @@ Equipe MeuPrev`;
     });
     const topTypes = Object.entries(byType)
       .sort(([,a], [,b]) => b - a)
-      .slice(0, 5); // Top 5
+      .slice(0, 5); 
 
     // Estados
     const byState: {[key: string]: number} = {};
@@ -457,7 +459,7 @@ Equipe MeuPrev`;
     });
     const topStates = Object.entries(byState)
       .sort(([,a], [,b]) => b - a)
-      .slice(0, 5); // Top 5
+      .slice(0, 5); 
 
     // Últimos 7 dias
     const last7Days = [];
@@ -465,13 +467,13 @@ Equipe MeuPrev`;
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      const fullDateStr = d.toLocaleDateString('pt-BR'); // para comparar
+      const fullDateStr = d.toLocaleDateString('pt-BR'); 
       
       const count = leads.filter(l => new Date(l.created_at).toLocaleDateString('pt-BR') === fullDateStr).length;
       last7Days.push({ date: dateStr, count });
     }
 
-    return { total, todayCount, conversionRate, mobileRate, topTypes, topStates, last7Days };
+    return { total, todayCount, conversionRate, topTypes, topStates, last7Days };
   }, [leads]);
 
   // --- PREPARAÇÃO DADOS GRÁFICO (SVG) ---
@@ -584,7 +586,7 @@ Equipe MeuPrev`;
                 Monitorando em Tempo Real
              </div>
 
-            <button onClick={() => fetchLeads(false)} className="p-2 text-slate-500 hover:text-amber-500 transition-colors" title="Atualizar">
+            <button onClick={() => fetchData(false)} className="p-2 text-slate-500 hover:text-amber-500 transition-colors" title="Atualizar">
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
             <div className="h-8 w-px bg-slate-200"></div>
@@ -811,11 +813,11 @@ Equipe MeuPrev`;
 
               <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
                  <div>
-                    <p className="text-sm text-slate-500 font-medium">Acesso Mobile</p>
-                    <h3 className="text-3xl font-bold text-slate-900 mt-1">{stats.mobileRate}%</h3>
+                    <p className="text-sm text-slate-500 font-medium">Visitas no Site</p>
+                    <h3 className="text-3xl font-bold text-slate-900 mt-1">{visitCount}</h3>
                  </div>
-                 <div className="bg-purple-100 p-3 rounded-full text-purple-600">
-                    <Smartphone size={24} />
+                 <div className="bg-cyan-100 p-3 rounded-full text-cyan-600">
+                    <Globe size={24} />
                  </div>
               </div>
            </div>
