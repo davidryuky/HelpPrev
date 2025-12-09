@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Volume2, XCircle, Download } from 'lucide-react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Globe, Fingerprint, Mail, Send, ChevronLeft, ChevronRight, BarChart3, TrendingUp, CalendarRange, PieChart, MapPin, Bell, Volume2, XCircle, Download, Activity } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -456,7 +456,7 @@ Equipe MeuPrev`;
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5); // Top 5
 
-    // Últimos 7 dias
+    // Últimos 7 dias (Para Gráfico de Linha)
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -470,6 +470,35 @@ Equipe MeuPrev`;
 
     return { total, todayCount, conversionRate, mobileRate, topTypes, topStates, last7Days };
   }, [leads]);
+
+  // Funções Auxiliares para o Gráfico de Linha SVG
+  const getChartPath = (data: { date: string, count: number }[], width: number, height: number) => {
+    if (data.length === 0) return null;
+    
+    const maxVal = Math.max(...data.map(d => d.count), 1); // Evitar divisão por zero
+    const paddingX = 40;
+    const paddingY = 20;
+    const chartWidth = width - (paddingX * 2);
+    const chartHeight = height - (paddingY * 2);
+    
+    // Calcular pontos
+    const points = data.map((d, i) => {
+      const x = paddingX + (i / (data.length - 1)) * chartWidth;
+      const y = height - paddingY - ((d.count / maxVal) * chartHeight);
+      return `${x},${y}`;
+    });
+
+    return {
+       line: points.join(" "),
+       area: `${points.join(" ")} ${width - paddingX},${height} ${paddingX},${height}`,
+       points: points.map((p, i) => ({ 
+           x: parseFloat(p.split(',')[0]), 
+           y: parseFloat(p.split(',')[1]), 
+           value: data[i].count,
+           label: data[i].date 
+       }))
+    };
+  };
 
   // --- VIEW: LOGIN ---
   if (!isAuthenticated) {
@@ -525,6 +554,9 @@ Equipe MeuPrev`;
   }
 
   // --- VIEW: DASHBOARD ---
+  const chartConfig = { width: 800, height: 250 };
+  const chartData = getChartPath(stats.last7Days, chartConfig.width, chartConfig.height);
+
   return (
     <div className="min-h-screen bg-slate-100 pb-20 relative">
       {/* Toast de Notificação */}
@@ -799,32 +831,62 @@ Equipe MeuPrev`;
            </div>
 
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Gráfico de Barras - Últimos 7 dias */}
+              {/* Gráfico de Linha - Últimos 7 dias */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
                  <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <TrendingUp size={18} className="text-slate-400" /> Leads nos Últimos 7 Dias
+                    <Activity size={18} className="text-slate-400" /> Tendência de Leads (7 Dias)
                  </h3>
-                 <div className="h-64 flex items-end justify-between gap-4 px-2">
-                    {stats.last7Days.map((day, idx) => {
-                       // Encontrar o maior valor para calcular altura relativa
-                       const max = Math.max(...stats.last7Days.map(d => d.count), 1); 
-                       const heightPct = (day.count / max) * 100;
-                       return (
-                          <div key={idx} className="flex flex-col items-center flex-1 group">
-                             <div className="relative w-full bg-slate-100 rounded-t-lg overflow-hidden flex items-end h-48 transition-all hover:bg-slate-200">
-                                <div 
-                                  className="w-full bg-gradient-to-t from-amber-500 to-amber-300 rounded-t-lg transition-all duration-500 hover:to-amber-400 relative group-hover:shadow-[0_0_15px_rgba(245,158,11,0.5)]"
-                                  style={{ height: `${heightPct}%` }}
-                                >
-                                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                      {day.count}
-                                   </div>
-                                </div>
-                             </div>
-                             <span className="text-xs text-slate-500 mt-3 font-medium">{day.date}</span>
-                          </div>
-                       );
-                    })}
+                 <div className="relative h-64 w-full bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
+                    {/* SVG Chart */}
+                    <svg 
+                      viewBox={`0 0 ${chartConfig.width} ${chartConfig.height}`} 
+                      className="w-full h-full"
+                      preserveAspectRatio="none"
+                    >
+                      <defs>
+                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.3"/>
+                          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      
+                      {/* Grid Lines Horizontais (Opcional) */}
+                      <line x1="0" y1={chartConfig.height - 20} x2={chartConfig.width} y2={chartConfig.height - 20} stroke="#e2e8f0" strokeWidth="1" />
+                      <line x1="0" y1="20" x2={chartConfig.width} y2="20" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4"/>
+                      
+                      {/* Area Fill */}
+                      <polygon points={chartData?.area} fill="url(#chartGradient)" />
+                      
+                      {/* Line Stroke */}
+                      <polyline 
+                        points={chartData?.line} 
+                        fill="none" 
+                        stroke="#f59e0b" 
+                        strokeWidth="3" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        className="drop-shadow-md"
+                      />
+
+                      {/* Dots and Tooltips */}
+                      {chartData?.points?.map((p, i) => (
+                        <g key={i} className="group cursor-pointer">
+                           <circle cx={p.x} cy={p.y} r="5" fill="white" stroke="#f59e0b" strokeWidth="2" className="transition-all group-hover:r-7"/>
+                           
+                           {/* Invisible Hit Area */}
+                           <circle cx={p.x} cy={p.y} r="15" fill="transparent" />
+
+                           {/* Tooltip Label (Date) */}
+                           <text x={p.x} y={chartConfig.height - 5} textAnchor="middle" fontSize="12" fill="#64748b">{p.label}</text>
+                           
+                           {/* Value Label (On Hover) */}
+                           <g className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <rect x={p.x - 20} y={p.y - 35} width="40" height="25" rx="4" fill="#1e293b" />
+                              <text x={p.x} y={p.y - 18} textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">{p.value}</text>
+                           </g>
+                        </g>
+                      ))}
+                    </svg>
                  </div>
               </div>
 
