@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Monitor, Globe, Fingerprint, MapPin } from 'lucide-react';
+import { Lock, Search, CheckCircle, Clock, FileText, X, Save, RefreshCw, Loader2, Trash2, Filter, Briefcase, Eye, Smartphone, Monitor, Globe, Fingerprint, Mail, Send } from 'lucide-react';
 
 interface Lead {
   id: number;
@@ -25,6 +25,11 @@ export const Admin: React.FC = () => {
   const [viewDataLead, setViewDataLead] = useState<Lead | null>(null); // Para o modal de dados técnicos
   const [tempNotes, setTempNotes] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  
+  // Estados para envio de email
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailData, setEmailData] = useState({ to: '', subject: '', body: '' });
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -146,6 +151,7 @@ export const Admin: React.FC = () => {
     }
   };
 
+  // Funções de Modal
   const openLeadModal = (lead: Lead) => {
     setSelectedLead(lead);
     setTempNotes(lead.notes || '');
@@ -153,6 +159,69 @@ export const Admin: React.FC = () => {
 
   const openDataModal = (lead: Lead) => {
     setViewDataLead(lead);
+  };
+
+  const handleOpenEmailModal = (lead: Lead) => {
+    const waLink = `https://wa.me/55${lead.whatsapp.replace(/\D/g,'')}`;
+    const generatedBody = `Olá Dr(a),
+
+Segue abaixo um novo caso captado pela plataforma MeuPrev para sua análise.
+
+--- DADOS DO CLIENTE ---
+Nome: ${lead.name}
+Telefone/WhatsApp: ${lead.whatsapp}
+Link Direto: ${waLink}
+Estado: ${lead.state || 'Não informado'}
+Tipo da Demanda: ${lead.type}
+
+--- OBSERVAÇÕES / RESUMO ---
+${lead.notes || 'Nenhuma observação cadastrada.'}
+
+--- DADOS TÉCNICOS ---
+Data de Cadastro: ${new Date(lead.created_at).toLocaleDateString('pt-BR')}
+
+Atenciosamente,
+Equipe MeuPrev`;
+
+    setEmailData({
+      to: '',
+      subject: `Encaminhamento de Caso: ${lead.name} - ${lead.type}`,
+      body: generatedBody
+    });
+    setEmailModalOpen(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailData.to) {
+      alert('Por favor, preencha o email do destinatário.');
+      return;
+    }
+    
+    setEmailSending(true);
+    try {
+      const res = await fetch('/api/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+        },
+        body: JSON.stringify(emailData)
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert('Email enviado com sucesso!');
+        setEmailModalOpen(false);
+      } else {
+        alert(`Erro ao enviar: ${data.details || data.error}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Erro de conexão ao tentar enviar email.');
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   const saveNotes = async () => {
@@ -404,6 +473,13 @@ export const Admin: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleOpenEmailModal(lead)}
+                            className="text-slate-400 hover:text-purple-600 transition-colors bg-slate-100 hover:bg-purple-100 p-2 rounded-lg"
+                            title="Encaminhar por Email"
+                          >
+                            <Mail size={18} />
+                          </button>
                            <button 
                             onClick={() => openDataModal(lead)}
                             className="text-slate-400 hover:text-blue-600 transition-colors bg-slate-100 hover:bg-blue-100 p-2 rounded-lg"
@@ -442,6 +518,75 @@ export const Admin: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Modal de Envio de Email */}
+      {emailModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex justify-between items-center text-white">
+              <div className="flex items-center gap-2">
+                <Mail size={20} />
+                <h3 className="font-bold">Encaminhar Caso</h3>
+              </div>
+              <button onClick={() => setEmailModalOpen(false)} className="text-white/80 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-1">Email do Advogado(a)</label>
+                   <input 
+                     type="email" 
+                     placeholder="nome@advocacia.com.br"
+                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                     value={emailData.to}
+                     onChange={(e) => setEmailData({...emailData, to: e.target.value})}
+                   />
+                </div>
+
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-1">Assunto</label>
+                   <input 
+                     type="text" 
+                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-slate-50"
+                     value={emailData.subject}
+                     onChange={(e) => setEmailData({...emailData, subject: e.target.value})}
+                   />
+                </div>
+
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-1">Mensagem (Editável)</label>
+                   <textarea 
+                     className="w-full h-64 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none text-sm font-mono leading-relaxed"
+                     value={emailData.body}
+                     onChange={(e) => setEmailData({...emailData, body: e.target.value})}
+                   ></textarea>
+                   <p className="text-xs text-slate-400 mt-1">Dica: Você pode adicionar comentários pessoais antes de enviar.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+               <button 
+                  onClick={() => setEmailModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSendEmail}
+                  disabled={emailSending}
+                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {emailSending ? <Loader2 className="animate-spin w-4 h-4"/> : <Send size={16} />}
+                  {emailSending ? 'Enviando...' : 'Enviar Agora'}
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Anotações */}
       {selectedLead && (
