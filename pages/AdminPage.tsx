@@ -189,7 +189,6 @@ export const AdminPage: React.FC = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Dashboard leads={leads} visitCount={visitCount} />
         <LeadsTable 
           leads={leads} 
           loading={loading}
@@ -199,6 +198,7 @@ export const AdminPage: React.FC = () => {
           onOpenTech={(l) => { setSelectedLead(l); setTechOpen(true); }}
           onOpenDetails={(l) => { setSelectedLead(l); setDetailsOpen(true); }}
         />
+        <Dashboard leads={leads} visitCount={visitCount} />
       </main>
 
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} onSave={saveSettings} initialScripts={headScripts} />
