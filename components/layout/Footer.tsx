@@ -48,7 +48,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <h4 className="text-white font-bold mb-4">Institucional</h4>
             <ul className="space-y-2 text-sm">
               <li><button onClick={() => handleNav('about')} className="hover:text-amber-500 text-left">Quem Somos</button></li>
-              <li><button onClick={() => handleNav('team')} className="hover:text-amber-500 text-left">Nossos Parceiros</button></li>
               <li><button onClick={() => handleNav('blog')} className="hover:text-amber-500 text-left">Blog Jurídico</button></li>
               <li><button onClick={() => handleNav('privacy')} className="hover:text-amber-500 text-left">Política de Privacidade</button></li>
             </ul>
@@ -57,8 +56,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div>
             <h4 className="text-white font-bold mb-4">Fale Conosco</h4>
             <ul className="space-y-2 text-sm">
-              <li>Email: contato@meuprev.com.br</li>
-              <li>Atendimento da Plataforma: <br/>Seg a Sex, 8h às 18h</li>
+              <li>Email: contato@meuprev.com</li>
+              <li>Atendimento da Plataforma: <br/>24 horas por dia</li>
             </ul>
           </div>
         </div>
